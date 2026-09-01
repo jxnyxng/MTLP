@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+src-tauri/gen/
+src-tauri/target/
+
+# Local app data
+*.db
+*.db-shm
+*.db-wal
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Personal AI/tooling notes
+CODEX.md
+LOCAL_BUJO_MVP_PLAN.md
+.codex/
+.agents/
+.cursor/
+.claude/
+
+# OS/editor noise
+.DS_Store
+*.log
+.idea/
+.vscode/
