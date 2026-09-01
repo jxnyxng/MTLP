@@ -4,6 +4,14 @@ const DB_PATH = "sqlite:bujo.db";
 
 let db;
 
+async function ensureColumn(database, tableName, columnName, definition) {
+  const columns = await database.select(`PRAGMA table_info(${tableName})`);
+  const exists = columns.some((column) => column.name === columnName);
+  if (!exists) {
+    await database.execute(`ALTER TABLE ${tableName} ADD COLUMN ${definition}`);
+  }
+}
+
 export async function initDb() {
   if (db) return db;
 
@@ -21,6 +29,9 @@ export async function initDb() {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
+
+  await ensureColumn(db, "tasks", "time_block", "time_block TEXT DEFAULT NULL");
+  await ensureColumn(db, "tasks", "position", "position INTEGER NOT NULL DEFAULT 1000");
 
   await db.execute(`
     CREATE TABLE IF NOT EXISTS settings (

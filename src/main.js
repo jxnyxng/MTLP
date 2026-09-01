@@ -19,8 +19,8 @@ const tabs = [
   { id: "DAILY", label: "Daily" },
 ];
 
-const hours = Array.from({ length: 15 }, (_, index) => {
-  return `${String(index + 8).padStart(2, "0")}:00`;
+const hours = Array.from({ length: 20 }, (_, index) => {
+  return `${String(index + 5).padStart(2, "0")}:00`;
 });
 
 const state = {
@@ -38,9 +38,12 @@ const state = {
   monthDailyTasks: [],
   weekDailyTasks: [],
   periodNavPulse: 0,
+  detailModal: null,
 };
 
 const app = document.querySelector("#app");
+let dragSourceList = null;
+let pendingDropList = null;
 
 function toDateKey(date) {
   const year = date.getFullYear();
@@ -67,11 +70,11 @@ function toWeekStartDate(date) {
   return copy;
 }
 
-function targetFor(periodType) {
-  if (periodType === "YEARLY") return toYearKey(state.anchorDate);
-  if (periodType === "MONTHLY") return toMonthKey(state.anchorDate);
-  if (periodType === "WEEKLY") return toDateKey(toWeekStartDate(state.anchorDate));
-  return toDateKey(state.anchorDate);
+function targetFor(periodType, date = state.anchorDate) {
+  if (periodType === "YEARLY") return toYearKey(date);
+  if (periodType === "MONTHLY") return toMonthKey(date);
+  if (periodType === "WEEKLY") return toDateKey(toWeekStartDate(date));
+  return toDateKey(date);
 }
 
 function dateFromKey(value) {
@@ -90,6 +93,25 @@ function weekDates(date = state.anchorDate) {
     day.setDate(start.getDate() + index);
     return day;
   });
+}
+
+function monthWeeks(date = state.anchorDate) {
+  const weeks = [];
+  const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
+  const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+  const cursor = toWeekStartDate(firstDay);
+  const lastWeekStart = toWeekStartDate(lastDay);
+
+  while (cursor <= lastWeekStart) {
+    weeks.push({
+      targetDate: toDateKey(cursor),
+      anchorDate: new Date(cursor),
+      days: weekDates(cursor),
+    });
+    cursor.setDate(cursor.getDate() + 7);
+  }
+
+  return weeks;
 }
 
 function titleFor(periodType) {
@@ -219,11 +241,14 @@ async function addTaskFromInput(
   }
 
   try {
+    const sourceList = input.closest(".task-list");
     await addTask(
       content,
       periodType,
       targetDate,
-      getNextPosition(tasksFor(periodType, timeBlock, targetDate)),
+      sourceList
+        ? calculateAppendPosition(sourceList)
+        : getNextPosition(tasksFor(periodType, timeBlock, targetDate)),
       timeBlock,
     );
     input.value = "";
@@ -235,16 +260,13 @@ async function addTaskFromInput(
   }
 }
 
-function calculateDropPosition(item) {
-  let previous = item.previousElementSibling;
-  while (previous && !previous.classList.contains("task-item")) {
-    previous = previous.previousElementSibling;
-  }
-
-  let next = item.nextElementSibling;
-  while (next && !next.classList.contains("task-item")) {
-    next = next.nextElementSibling;
-  }
+function calculateDropPosition(list, item) {
+  const taskItems = Array.from(list.children).filter((child) =>
+    child.classList.contains("task-item"),
+  );
+  const index = taskItems.indexOf(item);
+  const previous = index > 0 ? taskItems[index - 1] : null;
+  const next = index >= 0 ? taskItems[index + 1] : null;
 
   const previousPosition = previous?.classList.contains("task-item")
     ? Number(previous.dataset.position)
@@ -260,6 +282,89 @@ function calculateDropPosition(item) {
   if (previousPosition !== null) return previousPosition + 1000;
   if (nextPosition !== null) return Math.max(1, Math.floor(nextPosition / 2));
   return 1000;
+}
+
+function calculateAppendPosition(list) {
+  const positions = Array.from(list.children)
+    .filter((child) => child.classList.contains("task-item"))
+    .map((child) => Number(child.dataset.position) || 0);
+  if (!positions.length) return 1000;
+  return Math.max(...positions) + 1000;
+}
+
+function dropTargetFor(list) {
+  return {
+    periodType: list.dataset.periodType,
+    targetDate: list.dataset.targetDate,
+    timeBlock: list.dataset.timeBlock ?? null,
+  };
+}
+
+function clearDropTargets({ resetDrag = false } = {}) {
+  document.querySelectorAll(".drop-target, .drop-list-target, .reorder-list-target").forEach((element) => {
+    element.classList.remove("drop-target", "drop-list-target", "reorder-list-target");
+  });
+  if (resetDrag) {
+    document.body.classList.remove("is-dragging-task");
+    dragSourceList = null;
+    pendingDropList = null;
+  }
+}
+
+function markDropTarget(list) {
+  clearDropTargets();
+  if (list?.classList.contains("task-list")) {
+    list.classList.add(list === dragSourceList ? "reorder-list-target" : "drop-list-target");
+  }
+  const target =
+    list?.closest(".hour-row, .month-card, .day-card, .week-day-card, .weekly-goals") ?? list;
+  if (target) target.classList.add("drop-target");
+}
+
+function insertionDirection(event) {
+  if (event.related?.classList.contains("add-task-row")) return -1;
+  if (!event.related?.classList.contains("task-item")) return true;
+
+  const pointerY = event.originalEvent?.clientY;
+  if (typeof pointerY !== "number") return true;
+
+  const rect = event.related.getBoundingClientRect();
+  return pointerY < rect.top + rect.height / 2 ? -1 : 1;
+}
+
+async function saveDroppedTask(event) {
+  if (!state.dbReady) return;
+
+  const fromType = event.from.dataset.periodType;
+  const target = dropTargetFor(event.to);
+  const position = event.position ?? calculateDropPosition(event.to, event.item);
+
+  try {
+    if (event.pullMode === "clone" || (fromType === "WEEKLY" && target.periodType === "DAILY")) {
+      await addTask(
+        event.item.dataset.content,
+        "DAILY",
+        target.targetDate,
+        position,
+        target.timeBlock,
+      );
+      setStatus("Daily로 복사 완료");
+    } else {
+      await moveTask(
+        Number(event.item.dataset.id),
+        target.periodType,
+        target.targetDate,
+        position,
+        target.timeBlock,
+      );
+      setStatus("이동 저장 완료");
+    }
+    await loadAndRender();
+  } catch (error) {
+    console.error(error);
+    setStatus("드래그 저장 실패");
+    await loadAndRender();
+  }
 }
 
 function renderShell() {
@@ -281,14 +386,14 @@ function renderShell() {
       </aside>
       <section class="workspace">
         <header class="topbar">
-          <div>
+          <div class="topbar-title">
             <h1 id="view-title"></h1>
             <p id="view-meta"></p>
           </div>
+          <section id="period-nav" class="period-nav"></section>
           <p id="db-status">SQLite 초기화 중...</p>
         </header>
         <section id="view-actions" class="view-actions"></section>
-        <section id="period-nav" class="period-nav"></section>
         <section id="view"></section>
         <section id="ai-summary" class="summary" hidden></section>
       </section>
@@ -305,6 +410,18 @@ function renderShell() {
           <button id="save-api-key" value="default" type="button">저장</button>
         </div>
       </form>
+    </dialog>
+    <dialog id="detail-modal">
+      <section class="detail-modal">
+        <header class="detail-modal-head">
+          <div>
+            <h2 id="detail-title"></h2>
+            <p id="detail-meta"></p>
+          </div>
+          <button id="detail-close" class="icon-button" type="button" aria-label="닫기">×</button>
+        </header>
+        <section id="detail-view"></section>
+      </section>
     </dialog>
   `;
 }
@@ -449,6 +566,12 @@ function createTaskItem(task) {
   item.dataset.content = task.content;
   item.dataset.periodType = task.period_type;
 
+  const handle = document.createElement("button");
+  handle.className = "drag-handle";
+  handle.type = "button";
+  handle.setAttribute("aria-label", "드래그해서 이동");
+  handle.title = "드래그해서 이동";
+
   const bullet = document.createElement("span");
   bullet.className = "bullet";
   bullet.textContent = task.status === "DONE" ? "×" : task.status === "CANCELLED" ? "－" : "•";
@@ -490,31 +613,70 @@ function createTaskItem(task) {
     }
   });
 
-  item.append(bullet, content, deleteButton);
+  item.append(handle, bullet, content, deleteButton);
   return item;
 }
 
-function createEntryInput(
+function resizeEntryInput(input) {
+  input.style.height = "auto";
+  input.style.height = `${input.scrollHeight}px`;
+}
+
+function createEntryRow(
   periodType,
-  placeholder,
   timeBlock = null,
   targetDate = targetFor(periodType),
 ) {
   const row = document.createElement("li");
   row.className = "entry-row";
 
-  const bullet = document.createElement("span");
-  bullet.textContent = "•";
-
-  const input = document.createElement("input");
-  input.type = "text";
-  input.placeholder = placeholder;
+  const input = document.createElement("textarea");
+  input.rows = 1;
+  input.addEventListener("input", () => resizeEntryInput(input));
+  input.addEventListener("blur", () => {
+    requestAnimationFrame(() => {
+      if (input.value.trim()) return;
+      row.replaceWith(createEntryInput(periodType, null, timeBlock, targetDate));
+    });
+  });
   input.addEventListener("keydown", async (event) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      row.replaceWith(createEntryInput(periodType, null, timeBlock, targetDate));
+      return;
+    }
     if (event.key !== "Enter") return;
+    if (event.shiftKey) return;
+    event.preventDefault();
     await addTaskFromInput(input, periodType, timeBlock, targetDate);
+    resizeEntryInput(input);
   });
 
-  row.append(bullet, input);
+  row.append(input);
+  requestAnimationFrame(() => resizeEntryInput(input));
+  return row;
+}
+
+function createEntryInput(
+  periodType,
+  _placeholder,
+  timeBlock = null,
+  targetDate = targetFor(periodType),
+) {
+  const row = document.createElement("li");
+  row.className = "add-task-row";
+
+  const button = document.createElement("button");
+  button.className = "add-task-button";
+  button.type = "button";
+  button.textContent = "+";
+  button.setAttribute("aria-label", "할 일 추가");
+  button.addEventListener("click", () => {
+    const row = createEntryRow(periodType, timeBlock, targetDate);
+    button.closest(".add-task-row").replaceWith(row);
+    row.querySelector("textarea").focus();
+  });
+  row.append(button);
   return row;
 }
 
@@ -530,22 +692,36 @@ function renderTaskList(list, periodType, tasks, placeholder) {
   );
 }
 
-function createPanel(periodType, isCompanion = false) {
+function createTaskStack(list) {
+  const stack = document.createElement("div");
+  stack.className = "task-stack";
+  stack.append(list);
+  return stack;
+}
+
+function createPanel(
+  periodType,
+  isCompanion = false,
+  data = state,
+  anchorDate = state.anchorDate,
+  isDetail = false,
+) {
   const panel = document.createElement("section");
   panel.className = `panel ${periodType.toLowerCase()}-panel`;
   if (isCompanion) panel.classList.add("companion-panel");
+  if (isDetail) panel.classList.add("detail-panel");
   panel.setAttribute("aria-label", titleFor(periodType));
 
   if (periodType === "YEARLY") {
-    renderYearlyPanel(panel);
+    renderYearlyPanel(panel, data, anchorDate, isDetail);
   } else if (periodType === "MONTHLY") {
-    renderMonthlyPanel(panel);
+    renderMonthlyPanel(panel, data, anchorDate, isDetail);
   } else if (periodType === "WEEKLY") {
-    renderWeeklyPanel(panel);
+    renderWeeklyPanel(panel, data, anchorDate, isDetail);
   } else if (periodType === "DAILY") {
-    renderDailyPanel(panel);
+    renderDailyPanel(panel, data, anchorDate);
   } else {
-    renderPeriodPanel(panel, periodType);
+    renderPeriodPanel(panel, periodType, data, anchorDate);
   }
 
   return panel;
@@ -555,17 +731,24 @@ function monthTarget(year, monthIndex) {
   return `${year}-${String(monthIndex + 1).padStart(2, "0")}`;
 }
 
-function renderYearlyPanel(panel) {
+function renderYearlyPanel(panel, data = state, anchorDate = state.anchorDate) {
   const grid = document.createElement("div");
   grid.className = "month-grid";
-  const year = state.anchorDate.getFullYear();
+  const year = anchorDate.getFullYear();
 
   for (let index = 0; index < 12; index += 1) {
     const card = document.createElement("section");
     card.className = "month-card";
 
     const heading = document.createElement("h3");
-    heading.textContent = `${index + 1}월`;
+    const headingButton = document.createElement("button");
+    headingButton.className = "heading-link";
+    headingButton.type = "button";
+    headingButton.textContent = `${index + 1}월`;
+    headingButton.addEventListener("click", async () => {
+      await openDetailModal("MONTHLY", new Date(year, index, 1));
+    });
+    heading.append(headingButton);
 
     const list = document.createElement("ul");
     list.className = "task-list month-task-list";
@@ -575,51 +758,93 @@ function renderYearlyPanel(panel) {
     renderTaskList(
       list,
       "MONTHLY",
-      state.yearlyMonthTasks.filter((task) => task.target_date === list.dataset.targetDate),
+      data.yearlyMonthTasks.filter((task) => task.target_date === list.dataset.targetDate),
       `${index + 1}월 할 일 입력 후 Enter`,
     );
 
-    card.append(heading, list);
+    card.append(heading, createTaskStack(list));
     grid.append(card);
   }
 
   panel.append(grid);
 }
 
-function renderMonthlyPanel(panel) {
-  const grid = document.createElement("div");
-  grid.className = "day-grid";
-  const monthPrefix = targetFor("MONTHLY");
+function renderMonthlyPanel(panel, data = state, anchorDate = state.anchorDate) {
+  const weekList = document.createElement("div");
+  weekList.className = "month-week-list";
 
-  for (let day = 1; day <= daysInMonth(); day += 1) {
-    const targetDate = `${monthPrefix}-${String(day).padStart(2, "0")}`;
-    const date = dateFromKey(targetDate);
-    const card = document.createElement("section");
-    card.className = "day-card";
+  monthWeeks(anchorDate).forEach((week, index) => {
+    const section = document.createElement("section");
+    section.className = "month-week-section";
 
-    const heading = document.createElement("h3");
-    heading.innerHTML = `<span>${day}</span><small>${date.toLocaleDateString("en-US", { weekday: "short" })}</small>`;
+    const title = document.createElement("h3");
+    const weekButton = document.createElement("button");
+    weekButton.className = "heading-link week-heading-link";
+    weekButton.type = "button";
+    weekButton.innerHTML = `<span>${index + 1}주차</span><small>${week.days[0].getMonth() + 1}/${week.days[0].getDate()} - ${week.days.at(-1).getMonth() + 1}/${week.days.at(-1).getDate()}</small>`;
+    weekButton.addEventListener("click", async () => {
+      await openDetailModal("WEEKLY", week.anchorDate);
+    });
+    title.append(weekButton);
 
-    const list = document.createElement("ul");
-    list.className = "task-list day-task-list";
-    list.dataset.periodType = "DAILY";
-    list.dataset.targetDate = targetDate;
+    const grid = document.createElement("div");
+    grid.className = "day-grid month-week-days";
 
-    renderTaskList(
-      list,
-      "DAILY",
-      state.monthDailyTasks.filter((task) => task.target_date === targetDate && !task.time_block),
-      "Plan this day",
-    );
+    for (const date of week.days) {
+      const day = date.getDate();
+      const targetDate = toDateKey(date);
+      const isCurrentMonth =
+        date.getFullYear() === anchorDate.getFullYear() &&
+        date.getMonth() === anchorDate.getMonth();
+      const card = document.createElement("section");
+      card.className = "day-card";
+      if (!isCurrentMonth) card.classList.add("muted-day-card");
 
-    card.append(heading, list);
-    grid.append(card);
-  }
+      const heading = document.createElement("h3");
+      const headingButton = document.createElement("button");
+      headingButton.className = "heading-link day-heading-link";
+      headingButton.type = "button";
+      headingButton.innerHTML = `<span>${day}</span><small>${date.toLocaleDateString("en-US", { weekday: "short" })}</small>`;
+      if (isCurrentMonth) {
+        headingButton.addEventListener("click", async () => {
+          await openDetailModal("DAILY", date);
+        });
+      } else {
+        headingButton.disabled = true;
+        headingButton.setAttribute("aria-label", "이번 달이 아닌 날짜");
+      }
+      heading.append(headingButton);
 
-  panel.append(grid);
+      if (isCurrentMonth) {
+        const list = document.createElement("ul");
+        list.className = "task-list day-task-list";
+        list.dataset.periodType = "DAILY";
+        list.dataset.targetDate = targetDate;
+
+        renderTaskList(
+          list,
+          "DAILY",
+          data.monthDailyTasks.filter((task) => task.target_date === targetDate && !task.time_block),
+          "Plan this day",
+        );
+
+        card.append(heading, createTaskStack(list));
+      } else {
+        const placeholder = document.createElement("div");
+        placeholder.className = "muted-day-placeholder";
+        card.append(heading, placeholder);
+      }
+      grid.append(card);
+    }
+
+    section.append(title, grid);
+    weekList.append(section);
+  });
+
+  panel.append(weekList);
 }
 
-function renderWeeklyPanel(panel) {
+function renderWeeklyPanel(panel, data = state, anchorDate = state.anchorDate) {
   const wrap = document.createElement("div");
   wrap.className = "weekly-board";
 
@@ -630,20 +855,27 @@ function renderWeeklyPanel(panel) {
   const goalsList = document.createElement("ul");
   goalsList.className = "task-list";
   goalsList.dataset.periodType = "WEEKLY";
-  goalsList.dataset.targetDate = targetFor("WEEKLY");
-  renderTaskList(goalsList, "WEEKLY", state.tasks.WEEKLY, "Weekly task");
-  goals.append(goalsTitle, goalsList);
+  goalsList.dataset.targetDate = targetFor("WEEKLY", anchorDate);
+  renderTaskList(goalsList, "WEEKLY", data.tasks.WEEKLY, "Weekly task");
+  goals.append(goalsTitle, createTaskStack(goalsList));
 
   const days = document.createElement("div");
   days.className = "week-day-strip";
 
-  for (const date of weekDates()) {
+  for (const date of weekDates(anchorDate)) {
     const targetDate = toDateKey(date);
     const card = document.createElement("section");
     card.className = "week-day-card";
 
     const heading = document.createElement("h3");
-    heading.innerHTML = `<span>${date.toLocaleDateString("en-US", { weekday: "short" })}</span><small>${date.getMonth() + 1}/${date.getDate()}</small>`;
+    const headingButton = document.createElement("button");
+    headingButton.className = "heading-link day-heading-link";
+    headingButton.type = "button";
+    headingButton.innerHTML = `<span>${date.toLocaleDateString("en-US", { weekday: "short" })}</span><small>${date.getMonth() + 1}/${date.getDate()}</small>`;
+    headingButton.addEventListener("click", async () => {
+      await openDetailModal("DAILY", date);
+    });
+    heading.append(headingButton);
 
     const list = document.createElement("ul");
     list.className = "task-list week-task-list";
@@ -653,11 +885,11 @@ function renderWeeklyPanel(panel) {
     renderTaskList(
       list,
       "DAILY",
-      state.weekDailyTasks.filter((task) => task.target_date === targetDate && !task.time_block),
+      data.weekDailyTasks.filter((task) => task.target_date === targetDate && !task.time_block),
       "Daily plan",
     );
 
-    card.append(heading, list);
+    card.append(heading, createTaskStack(list));
     days.append(card);
   }
 
@@ -665,16 +897,16 @@ function renderWeeklyPanel(panel) {
   panel.append(wrap);
 }
 
-function renderPeriodPanel(panel, periodType) {
+function renderPeriodPanel(panel, periodType, data = state, anchorDate = state.anchorDate) {
   const list = document.createElement("ul");
   list.className = "task-list";
   list.dataset.periodType = periodType;
-  list.dataset.targetDate = targetFor(periodType);
-  renderTaskList(list, periodType, state.tasks[periodType], "새 불렛 입력 후 Enter");
-  panel.append(list);
+  list.dataset.targetDate = targetFor(periodType, anchorDate);
+  renderTaskList(list, periodType, data.tasks[periodType], "새 불렛 입력 후 Enter");
+  panel.append(createTaskStack(list));
 }
 
-function renderDailyPanel(panel) {
+function renderDailyPanel(panel, data = state, anchorDate = state.anchorDate) {
   const timeline = document.createElement("div");
   timeline.className = "timeline";
 
@@ -685,17 +917,26 @@ function renderDailyPanel(panel) {
   const allDayList = document.createElement("ul");
   allDayList.className = "task-list compact";
   allDayList.dataset.periodType = "DAILY";
-  allDayList.dataset.targetDate = targetFor("DAILY");
+  allDayList.dataset.targetDate = targetFor("DAILY", anchorDate);
   renderTaskList(
     allDayList,
     "DAILY",
-    state.tasks.DAILY.filter((task) => !task.time_block),
+    data.tasks.DAILY.filter((task) => !task.time_block),
     "Plan this day",
   );
-  allDay.append(allDayLabel, allDayList);
+  allDay.append(allDayLabel, createTaskStack(allDayList));
   timeline.append(allDay);
 
-  for (const hour of hours) {
+  const hourColumns = document.createElement("div");
+  hourColumns.className = "timeline-columns";
+
+  const leftColumn = document.createElement("div");
+  leftColumn.className = "timeline-column";
+
+  const rightColumn = document.createElement("div");
+  rightColumn.className = "timeline-column";
+
+  hours.forEach((hour, index) => {
     const row = document.createElement("section");
     row.className = "hour-row";
 
@@ -705,20 +946,59 @@ function renderDailyPanel(panel) {
     const list = document.createElement("ul");
     list.className = "task-list compact";
     list.dataset.periodType = "DAILY";
-    list.dataset.targetDate = targetFor("DAILY");
+    list.dataset.targetDate = targetFor("DAILY", anchorDate);
     list.dataset.timeBlock = hour;
     renderTaskList(
       list,
       "DAILY",
-      state.tasks.DAILY.filter((task) => task.time_block === hour),
+      data.tasks.DAILY.filter((task) => task.time_block === hour),
       "이 칸에 입력 후 Enter",
     );
 
-    row.append(label, list);
-    timeline.append(row);
-  }
+    row.append(label, createTaskStack(list));
+    (index < hours.length / 2 ? leftColumn : rightColumn).append(row);
+  });
+
+  hourColumns.append(leftColumn, rightColumn);
+  timeline.append(hourColumns);
 
   panel.append(timeline);
+}
+
+async function openDetailModal(periodType, anchorDate) {
+  if (periodType === state.activeTab && periodType === "DAILY") return;
+  state.detailModal = { periodType, anchorDate: new Date(anchorDate) };
+  await loadAndRender();
+  document.querySelector("#detail-modal").showModal();
+}
+
+function closeDetailModal() {
+  state.detailModal = null;
+  const modal = document.querySelector("#detail-modal");
+  if (modal.open) modal.close();
+  document.querySelector("#detail-view").replaceChildren();
+}
+
+async function renderDetailModal() {
+  const modal = document.querySelector("#detail-modal");
+  const detailView = document.querySelector("#detail-view");
+
+  if (!state.detailModal) {
+    if (modal.open) modal.close();
+    detailView.replaceChildren();
+    return;
+  }
+
+  const { periodType, anchorDate } = state.detailModal;
+  const data = await loadTaskData(anchorDate);
+  document.querySelector(".detail-modal").className =
+    `detail-modal detail-modal-${periodType.toLowerCase()}`;
+  document.querySelector("#detail-title").textContent = titleFor(periodType);
+  document.querySelector("#detail-meta").textContent =
+    periodType === "WEEKLY"
+      ? `${toDateKey(toWeekStartDate(anchorDate))} - ${toDateKey(weekDates(anchorDate).at(-1))}`
+      : targetFor(periodType, anchorDate);
+  detailView.replaceChildren(createPanel(periodType, false, data, anchorDate, true));
 }
 
 function bindSortables() {
@@ -734,33 +1014,47 @@ function bindSortables() {
         put: true,
       },
       animation: 120,
+      forceFallback: true,
       fallbackOnBody: true,
+      fallbackClass: "task-dragging",
+      emptyInsertThreshold: 32,
+      fallbackTolerance: 3,
       ghostClass: "task-ghost",
       chosenClass: "task-chosen",
+      filter: ".entry-row, .entry-row *, .delete-button, .add-task-button",
       draggable: ".task-item",
+      handle: ".drag-handle",
+      onStart(event) {
+        dragSourceList = event.from;
+        document.body.classList.add("is-dragging-task");
+        setStatus("드롭할 칸을 선택하세요");
+      },
+      onMove(event) {
+        markDropTarget(event.to);
+        if (event.to !== dragSourceList) {
+          pendingDropList = event.to;
+          return false;
+        }
+        pendingDropList = null;
+        return insertionDirection(event);
+      },
       async onEnd(event) {
-        if (!state.dbReady) return;
+        const targetList = pendingDropList;
+        clearDropTargets({ resetDrag: true });
+        if (targetList && targetList !== event.from) {
+          await saveDroppedTask({
+            item: event.item,
+            from: event.from,
+            to: targetList,
+            pullMode: event.pullMode,
+            position: calculateAppendPosition(targetList),
+          });
+          return;
+        }
 
-        const fromType = event.from.dataset.periodType;
-        const targetList = event.to;
-        const toType = targetList.dataset.periodType;
-        const targetDate = targetList.dataset.targetDate;
-        const timeBlock = targetList.dataset.timeBlock ?? null;
-        const position = calculateDropPosition(event.item);
-
-        try {
-          if (fromType === "WEEKLY" && toType === "DAILY") {
-            await addTask(event.item.dataset.content, "DAILY", targetDate, position, timeBlock);
-            setStatus("Daily로 복사 완료");
-          } else {
-            await moveTask(Number(event.item.dataset.id), toType, targetDate, position, timeBlock);
-            setStatus("이동 저장 완료");
-          }
-          await loadAndRender();
-        } catch (error) {
-          console.error(error);
-          setStatus("드래그 저장 실패");
-          await loadAndRender();
+        const reordered = event.oldDraggableIndex !== event.newDraggableIndex;
+        if (reordered) {
+          await saveDroppedTask(event);
         }
       },
     });
@@ -770,25 +1064,41 @@ function bindSortables() {
 async function loadTasks() {
   if (!state.dbReady) return;
 
-  const weekTargets = weekDates().map(toDateKey);
+  const data = await loadTaskData(state.anchorDate);
+
+  state.tasks.YEARLY = data.tasks.YEARLY;
+  state.tasks.MONTHLY = data.tasks.MONTHLY;
+  state.tasks.WEEKLY = data.tasks.WEEKLY;
+  state.tasks.DAILY = data.tasks.DAILY;
+  state.yearlyMonthTasks = data.yearlyMonthTasks;
+  state.monthDailyTasks = data.monthDailyTasks;
+  state.weekDailyTasks = data.weekDailyTasks;
+}
+
+async function loadTaskData(anchorDate) {
+  const weekTargets = weekDates(anchorDate).map(toDateKey);
   const [yearly, monthly, weekly, daily, yearlyMonthTasks, monthDailyTasks, weekDailyGroups] =
     await Promise.all([
-      getTasks("YEARLY", targetFor("YEARLY")),
-      getTasks("MONTHLY", targetFor("MONTHLY")),
-      getTasks("WEEKLY", targetFor("WEEKLY")),
-      getTasks("DAILY", targetFor("DAILY")),
-      getTasksByTargetPrefix("MONTHLY", `${targetFor("YEARLY")}-`),
-      getTasksByTargetPrefix("DAILY", `${targetFor("MONTHLY")}-`),
+      getTasks("YEARLY", targetFor("YEARLY", anchorDate)),
+      getTasks("MONTHLY", targetFor("MONTHLY", anchorDate)),
+      getTasks("WEEKLY", targetFor("WEEKLY", anchorDate)),
+      getTasks("DAILY", targetFor("DAILY", anchorDate)),
+      getTasksByTargetPrefix("MONTHLY", `${targetFor("YEARLY", anchorDate)}-`),
+      getTasksByTargetPrefix("DAILY", `${targetFor("MONTHLY", anchorDate)}-`),
       Promise.all(weekTargets.map((targetDate) => getTasks("DAILY", targetDate))),
     ]);
 
-  state.tasks.YEARLY = yearly;
-  state.tasks.MONTHLY = monthly;
-  state.tasks.WEEKLY = weekly;
-  state.tasks.DAILY = daily;
-  state.yearlyMonthTasks = yearlyMonthTasks;
-  state.monthDailyTasks = monthDailyTasks;
-  state.weekDailyTasks = weekDailyGroups.flat();
+  return {
+    tasks: {
+      YEARLY: yearly,
+      MONTHLY: monthly,
+      WEEKLY: weekly,
+      DAILY: daily,
+    },
+    yearlyMonthTasks,
+    monthDailyTasks,
+    weekDailyTasks: weekDailyGroups.flat(),
+  };
 }
 
 async function loadAndRender() {
@@ -807,6 +1117,7 @@ async function loadAndRender() {
   view.className = state.sideTab ? "split" : "single";
   view.replaceChildren(...panels);
 
+  await renderDetailModal();
   bindSortables();
 }
 
@@ -889,6 +1200,10 @@ document.querySelector("#sidebar-toggle").addEventListener("click", () => {
 document.querySelector("#settings-button").addEventListener("click", openSettings);
 document.querySelector("#save-api-key").addEventListener("click", saveSettings);
 document.querySelector("#review-button").addEventListener("click", requestReview);
+document.querySelector("#detail-close").addEventListener("click", closeDetailModal);
+document.querySelector("#detail-modal").addEventListener("close", () => {
+  state.detailModal = null;
+});
 
 try {
   await initDb();
