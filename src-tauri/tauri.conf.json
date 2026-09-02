@@ -15,6 +15,7 @@
         "title": "MTLP",
         "width": 1280,
         "height": 800,
+        "maximized": true,
         "minWidth": 1180,
         "minHeight": 680
       }

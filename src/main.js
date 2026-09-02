@@ -743,9 +743,8 @@ function renderShell() {
             <p id="view-meta"></p>
           </div>
           <section id="period-nav" class="period-nav"></section>
-          <p id="db-status">SQLite 초기화 중...</p>
+          <section id="view-actions" class="view-actions"></section>
         </header>
-        <section id="view-actions" class="view-actions"></section>
         <section id="view"></section>
         <section id="ai-summary" class="summary" hidden></section>
       </section>
@@ -985,7 +984,7 @@ function renderDateControls(container, periodType) {
 
   const todayButton = document.createElement("button");
   todayButton.type = "button";
-  todayButton.textContent = "Today";
+  todayButton.textContent = `Today : ${toDateKey(new Date())}`;
   todayButton.className = "today-button";
   todayButton.addEventListener("click", async () => {
     state.anchorDate = new Date();
@@ -1150,6 +1149,28 @@ function createTaskStack(list) {
   return stack;
 }
 
+function createSplitTaskStack(periodType, tasks, placeholder, targetDate) {
+  const stack = document.createElement("div");
+  stack.className = "split-task-stack";
+
+  const lists = [0, 1].map((lane) => {
+    const list = document.createElement("ul");
+    list.className = "task-list split-task-list";
+    list.dataset.periodType = periodType;
+    list.dataset.targetDate = targetDate;
+    renderTaskList(
+      list,
+      periodType,
+      tasks.filter((_, index) => index % 2 === lane),
+      placeholder,
+    );
+    return list;
+  });
+
+  stack.append(...lists);
+  return stack;
+}
+
 function createPanel(
   periodType,
   isCompanion = false,
@@ -1185,6 +1206,25 @@ function monthTarget(year, monthIndex) {
 }
 
 function renderFuturePanel(panel, data = state, anchorDate = state.anchorDate) {
+  const board = document.createElement("div");
+  board.className = "future-board";
+
+  const decadeGoals = document.createElement("section");
+  decadeGoals.className = "period-staging-card future-goals";
+  const decadeGoalsTitle = document.createElement("h3");
+  const decadeGoalsTitleText = document.createElement("span");
+  decadeGoalsTitleText.textContent = "This Decade";
+  decadeGoalsTitle.append(decadeGoalsTitleText);
+  decadeGoals.append(
+    decadeGoalsTitle,
+    createSplitTaskStack(
+      "FUTURE",
+      data.tasks.FUTURE,
+      "Decade task",
+      targetFor("FUTURE", anchorDate),
+    ),
+  );
+
   const grid = document.createElement("div");
   grid.className = "year-grid";
 
@@ -1218,10 +1258,30 @@ function renderFuturePanel(panel, data = state, anchorDate = state.anchorDate) {
     grid.append(card);
   }
 
-  panel.append(grid);
+  board.append(decadeGoals, grid);
+  panel.append(board);
 }
 
 function renderYearlyPanel(panel, data = state, anchorDate = state.anchorDate) {
+  const board = document.createElement("div");
+  board.className = "yearly-board";
+
+  const yearGoals = document.createElement("section");
+  yearGoals.className = "period-staging-card yearly-goals";
+  const yearGoalsTitle = document.createElement("h3");
+  const yearGoalsTitleText = document.createElement("span");
+  yearGoalsTitleText.textContent = "This Year";
+  yearGoalsTitle.append(yearGoalsTitleText);
+  yearGoals.append(
+    yearGoalsTitle,
+    createSplitTaskStack(
+      "YEARLY",
+      data.tasks.YEARLY,
+      "Yearly task",
+      targetFor("YEARLY", anchorDate),
+    ),
+  );
+
   const grid = document.createElement("div");
   grid.className = "month-grid";
   const year = anchorDate.getFullYear();
@@ -1256,7 +1316,8 @@ function renderYearlyPanel(panel, data = state, anchorDate = state.anchorDate) {
     grid.append(card);
   }
 
-  panel.append(grid);
+  board.append(yearGoals, grid);
+  panel.append(board);
 }
 
 function renderMonthlyPanel(panel, data = state, anchorDate = state.anchorDate) {
@@ -1266,13 +1327,18 @@ function renderMonthlyPanel(panel, data = state, anchorDate = state.anchorDate) 
   const monthGoals = document.createElement("section");
   monthGoals.className = "period-staging-card monthly-goals";
   const monthGoalsTitle = document.createElement("h3");
-  monthGoalsTitle.textContent = "This Month";
-  const monthGoalsList = document.createElement("ul");
-  monthGoalsList.className = "task-list";
-  monthGoalsList.dataset.periodType = "MONTHLY";
-  monthGoalsList.dataset.targetDate = targetFor("MONTHLY", anchorDate);
-  renderTaskList(monthGoalsList, "MONTHLY", data.tasks.MONTHLY, "Monthly task");
-  monthGoals.append(monthGoalsTitle, createTaskStack(monthGoalsList));
+  const monthGoalsTitleText = document.createElement("span");
+  monthGoalsTitleText.textContent = "This Month";
+  monthGoalsTitle.append(monthGoalsTitleText);
+  monthGoals.append(
+    monthGoalsTitle,
+    createSplitTaskStack(
+      "MONTHLY",
+      data.tasks.MONTHLY,
+      "Monthly task",
+      targetFor("MONTHLY", anchorDate),
+    ),
+  );
 
   const weekList = document.createElement("div");
   weekList.className = "month-week-list";
@@ -1353,21 +1419,7 @@ function renderWeeklyPanel(panel, data = state, anchorDate = state.anchorDate) {
   const wrap = document.createElement("div");
   wrap.className = "weekly-board";
 
-  const goals = document.createElement("section");
-  goals.className = "period-staging-card weekly-goals";
-  const goalsTitle = document.createElement("h3");
-  goalsTitle.textContent = "This Week";
-  const goalsList = document.createElement("ul");
-  goalsList.className = "task-list";
-  goalsList.dataset.periodType = "WEEKLY";
-  goalsList.dataset.targetDate = targetFor("WEEKLY", anchorDate);
-  renderTaskList(goalsList, "WEEKLY", data.tasks.WEEKLY, "Weekly task");
-  goals.append(goalsTitle, createTaskStack(goalsList));
-
-  const days = document.createElement("div");
-  days.className = "week-day-strip";
-
-  for (const date of weekDates(anchorDate)) {
+  const createWeekDayCard = (date) => {
     const targetDate = toDateKey(date);
     const card = document.createElement("section");
     card.className = "week-day-card";
@@ -1395,8 +1447,29 @@ function renderWeeklyPanel(panel, data = state, anchorDate = state.anchorDate) {
     );
 
     card.append(heading, createTaskStack(list));
-    days.append(card);
-  }
+    return card;
+  };
+
+  const dates = weekDates(anchorDate);
+  const goals = document.createElement("section");
+  goals.className = "period-staging-card weekly-goals";
+  const goalsTitle = document.createElement("h3");
+  const goalsTitleText = document.createElement("span");
+  goalsTitleText.textContent = "This Week";
+  goalsTitle.append(goalsTitleText);
+  goals.append(
+    goalsTitle,
+    createSplitTaskStack(
+      "WEEKLY",
+      data.tasks.WEEKLY,
+      "Weekly task",
+      targetFor("WEEKLY", anchorDate),
+    ),
+  );
+
+  const days = document.createElement("div");
+  days.className = "week-day-strip";
+  dates.forEach((date) => days.append(createWeekDayCard(date)));
 
   wrap.append(goals, days);
   panel.append(wrap);
@@ -1482,17 +1555,15 @@ function renderDailyPanel(panel, data = state, anchorDate = state.anchorDate) {
   const todayTitleText = document.createElement("span");
   todayTitleText.textContent = "This Day";
   todayTitle.append(todayTitleText, createTimelineRangeControls(anchorDate, range));
-  const todayList = document.createElement("ul");
-  todayList.className = "task-list";
-  todayList.dataset.periodType = "DAILY";
-  todayList.dataset.targetDate = targetFor("DAILY", anchorDate);
-  renderTaskList(
-    todayList,
-    "DAILY",
-    data.tasks.DAILY.filter((task) => !task.time_block),
-    "Daily task",
+  today.append(
+    todayTitle,
+    createSplitTaskStack(
+      "DAILY",
+      data.tasks.DAILY.filter((task) => !task.time_block),
+      "Daily task",
+      targetFor("DAILY", anchorDate),
+    ),
   );
-  today.append(todayTitle, createTaskStack(todayList));
 
   const timeline = document.createElement("div");
   timeline.className = "timeline";
@@ -1668,6 +1739,7 @@ async function loadTaskData(anchorDate) {
   const dailyTargetDate = targetFor("DAILY", anchorDate);
   const [
     futureYearGroups,
+    future,
     yearly,
     monthly,
     weekly,
@@ -1678,6 +1750,7 @@ async function loadTaskData(anchorDate) {
     timelineRange,
   ] = await Promise.all([
       Promise.all(yearTargets.map((targetDate) => getTasks("YEARLY", targetDate))),
+      getTasks("FUTURE", targetFor("FUTURE", anchorDate)),
       getTasks("YEARLY", targetFor("YEARLY", anchorDate)),
       getTasks("MONTHLY", targetFor("MONTHLY", anchorDate)),
       getTasks("WEEKLY", targetFor("WEEKLY", anchorDate)),
@@ -1691,7 +1764,7 @@ async function loadTaskData(anchorDate) {
 
   return {
     tasks: {
-      FUTURE: futureYearTasks,
+      FUTURE: future,
       YEARLY: yearly,
       MONTHLY: monthly,
       WEEKLY: weekly,
@@ -1714,7 +1787,7 @@ async function loadAndRender() {
   state.shouldAnimatePeriod = false;
 
   document.querySelector("#view-title").textContent = titleFor(state.activeTab);
-  document.querySelector("#view-meta").textContent = rangeLabelFor(state.activeTab);
+  document.querySelector("#view-meta").textContent = "";
 
   const panels = [createPanel(state.activeTab)];
   if (state.sideTab) panels.push(createPanel(state.sideTab, true));
