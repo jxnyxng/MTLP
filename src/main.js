@@ -161,129 +161,129 @@ const themes = [
   {
     id: "productivity-dark",
     mode: "dark",
-    name: "Focus Navy Dark",
-    description: "Classic Navy / Sage Green",
-    primary: "#1E293B",
-    secondary: "#86EFAC",
-    background: "#111827",
+    name: "Focus Dusk Dark",
+    description: "Slate / Fresh Green",
+    primary: "#9DB7D5",
+    secondary: "#8ED6A7",
+    background: "#1F2933",
     css: {
-      "--color-bg": "#111827",
-      "--color-bg-rgb": "17 24 39",
-      "--color-surface": "#1F2937",
-      "--color-surface-muted": "#263244",
-      "--color-panel": "#182131",
-      "--color-sidebar": "#0F172A",
-      "--color-sidebar-text": "#CBD5E1",
-      "--color-text": "#E5E7EB",
-      "--color-muted": "#A0AEC0",
-      "--color-subtle": "#718096",
-      "--color-border": "#344258",
-      "--color-border-strong": "#475569",
-      "--color-primary": "#CBD5E1",
-      "--color-primary-text": "#111827",
-      "--color-primary-soft": "#263244",
-      "--color-secondary": "#8FCFA3",
-      "--color-secondary-soft": "#1D3B2C",
-      "--color-input": "#111827",
+      "--color-bg": "#1F2933",
+      "--color-bg-rgb": "31 41 51",
+      "--color-surface": "#2B3642",
+      "--color-surface-muted": "#35424F",
+      "--color-panel": "#26313D",
+      "--color-sidebar": "#25303B",
+      "--color-sidebar-text": "#D7E0EA",
+      "--color-text": "#F3F6F9",
+      "--color-muted": "#C2CBD6",
+      "--color-subtle": "#9AA8B7",
+      "--color-border": "#465465",
+      "--color-border-strong": "#607085",
+      "--color-primary": "#B7CDE4",
+      "--color-primary-text": "#1F2933",
+      "--color-primary-soft": "#3B4857",
+      "--color-secondary": "#8ED6A7",
+      "--color-secondary-soft": "#2F4A3B",
+      "--color-input": "#303B47",
       "--color-danger": "#FCA5A5",
-      "--color-danger-soft": "#3B1F26",
-      "--shadow-panel": "0 1px 2px rgb(0 0 0 / 18%)",
+      "--color-danger-soft": "#563039",
+      "--shadow-panel": "0 1px 2px rgb(0 0 0 / 12%)",
     },
   },
   {
     id: "diary-dark",
     mode: "dark",
-    name: "Teatime Mild Dark",
-    description: "Terracotta / Butter Yellow",
-    primary: "#C2410C",
-    secondary: "#FEF08A",
-    background: "#1C1917",
+    name: "Teatime Dusk Dark",
+    description: "Rosewood / Honey",
+    primary: "#E1A38B",
+    secondary: "#E8D687",
+    background: "#2A2421",
     css: {
-      "--color-bg": "#1C1917",
-      "--color-bg-rgb": "28 25 23",
-      "--color-surface": "#292524",
-      "--color-surface-muted": "#332C27",
-      "--color-panel": "#241F1C",
-      "--color-sidebar": "#2A211D",
-      "--color-sidebar-text": "#E7D3C4",
-      "--color-text": "#F5EFE7",
-      "--color-muted": "#C9B8AA",
-      "--color-subtle": "#99887D",
-      "--color-border": "#473B34",
-      "--color-border-strong": "#5C4B41",
-      "--color-primary": "#D6A28B",
-      "--color-primary-text": "#241F1C",
-      "--color-primary-soft": "#3A2B25",
-      "--color-secondary": "#D9CB82",
-      "--color-secondary-soft": "#3A3420",
-      "--color-input": "#1C1917",
+      "--color-bg": "#2A2421",
+      "--color-bg-rgb": "42 36 33",
+      "--color-surface": "#39312D",
+      "--color-surface-muted": "#453B35",
+      "--color-panel": "#342C28",
+      "--color-sidebar": "#332A26",
+      "--color-sidebar-text": "#F0DED1",
+      "--color-text": "#FFF7EF",
+      "--color-muted": "#D7C3B4",
+      "--color-subtle": "#AE9889",
+      "--color-border": "#5B4D45",
+      "--color-border-strong": "#756256",
+      "--color-primary": "#E1A38B",
+      "--color-primary-text": "#2A2421",
+      "--color-primary-soft": "#574138",
+      "--color-secondary": "#E8D687",
+      "--color-secondary-soft": "#514A2E",
+      "--color-input": "#3D342F",
       "--color-danger": "#FDA4AF",
-      "--color-danger-soft": "#3D2028",
-      "--shadow-panel": "0 1px 2px rgb(0 0 0 / 18%)",
+      "--color-danger-soft": "#59313A",
+      "--shadow-panel": "0 1px 2px rgb(0 0 0 / 12%)",
     },
   },
   {
     id: "study-dark",
     mode: "dark",
-    name: "Calm Study Dark",
-    description: "Muted Lavender / Soft Mint",
-    primary: "#6366F1",
-    secondary: "#99F6E4",
-    background: "#1E1B4B",
+    name: "Calm Study Dusk",
+    description: "Periwinkle / Mint",
+    primary: "#B8BCEB",
+    secondary: "#9AD9CF",
+    background: "#2A2D46",
     css: {
-      "--color-bg": "#1E1B4B",
-      "--color-bg-rgb": "30 27 75",
-      "--color-surface": "#272456",
-      "--color-surface-muted": "#302D63",
-      "--color-panel": "#242151",
-      "--color-sidebar": "#1A1842",
-      "--color-sidebar-text": "#DADDF7",
-      "--color-text": "#EEF2FF",
-      "--color-muted": "#B8C0E0",
-      "--color-subtle": "#8D96BF",
-      "--color-border": "#41406D",
-      "--color-border-strong": "#56558A",
-      "--color-primary": "#B8BBE8",
-      "--color-primary-text": "#1E1B4B",
-      "--color-primary-soft": "#343164",
+      "--color-bg": "#2A2D46",
+      "--color-bg-rgb": "42 45 70",
+      "--color-surface": "#363A56",
+      "--color-surface-muted": "#424761",
+      "--color-panel": "#31354F",
+      "--color-sidebar": "#2D314A",
+      "--color-sidebar-text": "#E4E7FA",
+      "--color-text": "#F7F8FF",
+      "--color-muted": "#CDD4EC",
+      "--color-subtle": "#A8B0D0",
+      "--color-border": "#555B78",
+      "--color-border-strong": "#707796",
+      "--color-primary": "#C4C7F2",
+      "--color-primary-text": "#2A2D46",
+      "--color-primary-soft": "#494E6B",
       "--color-secondary": "#9AD9CF",
-      "--color-secondary-soft": "#1F4546",
-      "--color-input": "#1E1B4B",
+      "--color-secondary-soft": "#315557",
+      "--color-input": "#3B405B",
       "--color-danger": "#FDA4AF",
-      "--color-danger-soft": "#432130",
-      "--shadow-panel": "0 1px 2px rgb(0 0 0 / 18%)",
+      "--color-danger-soft": "#5A3445",
+      "--shadow-panel": "0 1px 2px rgb(0 0 0 / 12%)",
     },
   },
   {
     id: "minimal-dark",
     mode: "dark",
-    name: "Mono Charcoal Dark",
-    description: "Charcoal / Slate Gray",
-    primary: "#111827",
-    secondary: "#9CA3AF",
-    background: "#030712",
+    name: "Soft Graphite Dark",
+    description: "Graphite / Cool Gray",
+    primary: "#D4DAE3",
+    secondary: "#AEB8C5",
+    background: "#242832",
     css: {
-      "--color-bg": "#030712",
-      "--color-bg-rgb": "3 7 18",
-      "--color-surface": "#111827",
-      "--color-surface-muted": "#1F2937",
-      "--color-panel": "#0B1120",
-      "--color-sidebar": "#080D19",
-      "--color-sidebar-text": "#D1D5DB",
-      "--color-text": "#E5E7EB",
-      "--color-muted": "#A6ADB8",
-      "--color-subtle": "#7A828F",
-      "--color-border": "#293241",
-      "--color-border-strong": "#3B4556",
-      "--color-primary": "#D1D5DB",
-      "--color-primary-text": "#030712",
-      "--color-primary-soft": "#1F2937",
-      "--color-secondary": "#A6ADB8",
-      "--color-secondary-soft": "#1A2230",
-      "--color-input": "#030712",
+      "--color-bg": "#242832",
+      "--color-bg-rgb": "36 40 50",
+      "--color-surface": "#303641",
+      "--color-surface-muted": "#3B424F",
+      "--color-panel": "#2B303A",
+      "--color-sidebar": "#2A2F39",
+      "--color-sidebar-text": "#E0E4EA",
+      "--color-text": "#F4F6F8",
+      "--color-muted": "#C7CDD6",
+      "--color-subtle": "#9EA7B3",
+      "--color-border": "#4C5563",
+      "--color-border-strong": "#687382",
+      "--color-primary": "#D4DAE3",
+      "--color-primary-text": "#242832",
+      "--color-primary-soft": "#444C59",
+      "--color-secondary": "#AEB8C5",
+      "--color-secondary-soft": "#3D4652",
+      "--color-input": "#353B46",
       "--color-danger": "#FCA5A5",
-      "--color-danger-soft": "#341B22",
-      "--shadow-panel": "0 1px 2px rgb(0 0 0 / 20%)",
+      "--color-danger-soft": "#563039",
+      "--shadow-panel": "0 1px 2px rgb(0 0 0 / 12%)",
     },
   },
 ];
@@ -291,7 +291,8 @@ const themes = [
 const state = {
   activeTab: "DAILY",
   sideTab: null,
-  isEditing: false,
+  isEditing: true,
+  isLocked: false,
   dbReady: false,
   themeId: "productivity-light",
   anchorDate: new Date(),
@@ -349,6 +350,18 @@ function hourLabel(hour) {
 
 function hourValue(timeBlock) {
   return Number(timeBlock?.split(":")[0]);
+}
+
+function isCurrentMonthDate(date, now = new Date()) {
+  return date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth();
+}
+
+function isCurrentDate(date, now = new Date()) {
+  return isCurrentMonthDate(date, now) && date.getDate() === now.getDate();
+}
+
+function isCurrentHourBlock(timeBlock, now = new Date()) {
+  return hourValue(timeBlock) === now.getHours();
 }
 
 function hoursForRange(range) {
@@ -424,18 +437,34 @@ function weekDates(date = state.anchorDate) {
   });
 }
 
+function toCalendarWeekStartDate(date) {
+  const copy = new Date(date);
+  copy.setDate(copy.getDate() - copy.getDay());
+  copy.setHours(0, 0, 0, 0);
+  return copy;
+}
+
+function calendarWeekDates(date) {
+  const start = toCalendarWeekStartDate(date);
+  return Array.from({ length: 7 }, (_, index) => {
+    const day = new Date(start);
+    day.setDate(start.getDate() + index);
+    return day;
+  });
+}
+
 function monthWeeks(date = state.anchorDate) {
   const weeks = [];
   const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
   const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0);
-  const cursor = toWeekStartDate(firstDay);
-  const lastWeekStart = toWeekStartDate(lastDay);
+  const cursor = toCalendarWeekStartDate(firstDay);
+  const lastWeekStart = toCalendarWeekStartDate(lastDay);
 
   while (cursor <= lastWeekStart) {
     weeks.push({
       targetDate: toDateKey(cursor),
       anchorDate: new Date(cursor),
-      days: weekDates(cursor),
+      days: calendarWeekDates(cursor),
     });
     cursor.setDate(cursor.getDate() + 7);
   }
@@ -743,7 +772,10 @@ function renderShell() {
             <p id="view-meta"></p>
           </div>
           <section id="period-nav" class="period-nav"></section>
-          <section id="view-actions" class="view-actions"></section>
+          <section class="topbar-actions">
+            <section id="view-actions" class="view-actions"></section>
+            <section id="lock-actions" class="lock-actions"></section>
+          </section>
         </header>
         <section id="view"></section>
         <section id="ai-summary" class="summary" hidden></section>
@@ -787,8 +819,19 @@ function renderTabs() {
     ...tabs.map((tab) => {
       const button = document.createElement("button");
       button.type = "button";
-      button.textContent = tab.label;
       button.className = tab.id === state.activeTab ? "active" : "";
+      button.title = tab.label;
+      button.setAttribute("aria-label", tab.label);
+
+      const label = document.createElement("span");
+      label.className = "tab-label";
+      label.textContent = tab.label;
+
+      const shortLabel = document.createElement("span");
+      shortLabel.className = "tab-short";
+      shortLabel.textContent = tab.shortLabel;
+
+      button.append(label, shortLabel);
       button.addEventListener("click", async () => {
         state.activeTab = tab.id;
         if (state.sideTab === tab.id) state.sideTab = null;
@@ -866,20 +909,7 @@ function createThemeOption(theme) {
 
 function renderViewActions() {
   const actions = document.querySelector("#view-actions");
-  const editModeButton = document.createElement("button");
-  editModeButton.type = "button";
-  editModeButton.className = "edit-mode-button";
-  editModeButton.textContent = state.isEditing ? "완료" : "수정";
-  editModeButton.title = state.isEditing ? "수정 완료" : "수정 모드로 전환";
-  editModeButton.setAttribute(
-    "aria-label",
-    state.isEditing ? "수정 완료" : "수정 모드로 전환",
-  );
-  editModeButton.setAttribute("aria-pressed", String(state.isEditing));
-  editModeButton.addEventListener("click", async () => {
-    state.isEditing = !state.isEditing;
-    await loadAndRender();
-  });
+  const lockActions = document.querySelector("#lock-actions");
 
   const companionButtons = tabs
     .filter((tab) => tab.id !== state.activeTab && tab.id !== state.sideTab)
@@ -907,7 +937,20 @@ function renderViewActions() {
     await loadAndRender();
   });
 
-  actions.replaceChildren(editModeButton, ...companionButtons, closeButton);
+  const lockButton = document.createElement("button");
+  lockButton.type = "button";
+  lockButton.className = "lock-mode-button";
+  lockButton.textContent = state.isLocked ? "잠금 해제" : "잠금";
+  lockButton.title = state.isLocked ? "입력 잠금 해제" : "보기 전용으로 잠금";
+  lockButton.setAttribute("aria-label", state.isLocked ? "입력 잠금 해제" : "보기 전용으로 잠금");
+  lockButton.setAttribute("aria-pressed", String(state.isLocked));
+  lockButton.addEventListener("click", async () => {
+    state.isLocked = !state.isLocked;
+    await loadAndRender();
+  });
+
+  actions.replaceChildren(...companionButtons, closeButton);
+  lockActions.replaceChildren(lockButton);
 }
 
 function renderPeriodNav() {
@@ -1025,7 +1068,7 @@ function createTaskItem(task) {
   deleteButton.textContent = "×";
   deleteButton.title = "삭제";
 
-  if (state.isEditing) {
+  if (!state.isLocked) {
     deleteButton.addEventListener("click", async (event) => {
       event.stopPropagation();
       if (!state.dbReady) return;
@@ -1131,8 +1174,8 @@ function createEmptyReadItem() {
 
 function renderTaskList(list, periodType, tasks, placeholder) {
   const taskItems = tasks.map(createTaskItem);
-  if (!state.isEditing) {
-    list.replaceChildren(...(taskItems.length ? taskItems : [createEmptyReadItem()]));
+  if (state.isLocked) {
+    list.replaceChildren(...taskItems, createEmptyReadItem());
     return;
   }
 
@@ -1208,6 +1251,7 @@ function monthTarget(year, monthIndex) {
 function renderFuturePanel(panel, data = state, anchorDate = state.anchorDate) {
   const board = document.createElement("div");
   board.className = "future-board";
+  const now = new Date();
 
   const decadeGoals = document.createElement("section");
   decadeGoals.className = "period-staging-card future-goals";
@@ -1231,6 +1275,9 @@ function renderFuturePanel(panel, data = state, anchorDate = state.anchorDate) {
   for (const year of futureYears(anchorDate)) {
     const card = document.createElement("section");
     card.className = "year-card";
+    if (year === now.getFullYear()) {
+      card.classList.add("current-period-card", "current-year-card");
+    }
 
     const heading = document.createElement("h3");
     const headingButton = document.createElement("button");
@@ -1265,6 +1312,7 @@ function renderFuturePanel(panel, data = state, anchorDate = state.anchorDate) {
 function renderYearlyPanel(panel, data = state, anchorDate = state.anchorDate) {
   const board = document.createElement("div");
   board.className = "yearly-board";
+  const now = new Date();
 
   const yearGoals = document.createElement("section");
   yearGoals.className = "period-staging-card yearly-goals";
@@ -1289,6 +1337,9 @@ function renderYearlyPanel(panel, data = state, anchorDate = state.anchorDate) {
   for (let index = 0; index < 12; index += 1) {
     const card = document.createElement("section");
     card.className = "month-card";
+    if (year === now.getFullYear() && index === now.getMonth()) {
+      card.classList.add("current-period-card", "current-month-card");
+    }
 
     const heading = document.createElement("h3");
     const headingButton = document.createElement("button");
@@ -1323,6 +1374,7 @@ function renderYearlyPanel(panel, data = state, anchorDate = state.anchorDate) {
 function renderMonthlyPanel(panel, data = state, anchorDate = state.anchorDate) {
   const board = document.createElement("div");
   board.className = "monthly-board";
+  const now = new Date();
 
   const monthGoals = document.createElement("section");
   monthGoals.className = "period-staging-card monthly-goals";
@@ -1368,7 +1420,12 @@ function renderMonthlyPanel(panel, data = state, anchorDate = state.anchorDate) 
         date.getMonth() === anchorDate.getMonth();
       const card = document.createElement("section");
       card.className = "day-card";
+      if (date.getDay() === 6) card.classList.add("weekend-saturday");
+      if (date.getDay() === 0) card.classList.add("weekend-sunday");
       if (!isCurrentMonth) card.classList.add("muted-day-card");
+      if (isCurrentMonth && isCurrentDate(date, now)) {
+        card.classList.add("current-period-card", "current-day-card");
+      }
 
       const heading = document.createElement("h3");
       const headingButton = document.createElement("button");
@@ -1418,11 +1475,15 @@ function renderMonthlyPanel(panel, data = state, anchorDate = state.anchorDate) 
 function renderWeeklyPanel(panel, data = state, anchorDate = state.anchorDate) {
   const wrap = document.createElement("div");
   wrap.className = "weekly-board";
+  const now = new Date();
 
   const createWeekDayCard = (date) => {
     const targetDate = toDateKey(date);
     const card = document.createElement("section");
     card.className = "week-day-card";
+    if (isCurrentDate(date, now)) {
+      card.classList.add("current-period-card", "current-day-card");
+    }
 
     const heading = document.createElement("h3");
     const headingButton = document.createElement("button");
@@ -1548,6 +1609,8 @@ function renderDailyPanel(panel, data = state, anchorDate = state.anchorDate) {
   const board = document.createElement("div");
   board.className = "daily-board";
   const range = timelineRangeFor(anchorDate, data);
+  const now = new Date();
+  const isToday = isCurrentDate(anchorDate, now);
 
   const today = document.createElement("section");
   today.className = "period-staging-card today-goals";
@@ -1591,6 +1654,9 @@ function renderDailyPanel(panel, data = state, anchorDate = state.anchorDate) {
   timelineHours.forEach((hour, index) => {
     const row = document.createElement("section");
     row.className = "hour-row";
+    if (isToday && isCurrentHourBlock(hour, now)) {
+      row.classList.add("current-hour-row");
+    }
 
     const label = document.createElement("strong");
     label.textContent = hour;
@@ -1655,7 +1721,7 @@ async function renderDetailModal() {
 }
 
 function bindSortables() {
-  if (!state.isEditing) return;
+  if (state.isLocked) return;
 
   document.querySelectorAll(".task-list").forEach((list) => {
     Sortable.create(list, {
@@ -1818,25 +1884,49 @@ async function saveSettings() {
   document.querySelector("#settings-modal").close();
 }
 
-async function requestReview() {
+function hideReviewSummary() {
   const summary = document.querySelector("#ai-summary");
+  if (!summary) return;
+  summary.hidden = true;
+  summary.replaceChildren();
+}
+
+function showReviewSummary(message) {
+  const summary = document.querySelector("#ai-summary");
+  if (!summary) return;
+
+  const content = document.createElement("div");
+  content.className = "summary-content";
+  content.textContent = message;
+
+  const closeButton = document.createElement("button");
+  closeButton.className = "summary-close";
+  closeButton.type = "button";
+  closeButton.textContent = "×";
+  closeButton.setAttribute("aria-label", "AI 회고 요약 닫기");
+  closeButton.addEventListener("click", hideReviewSummary);
+
   summary.hidden = false;
-  summary.textContent = "AI 회고 요약 생성 중...";
+  summary.replaceChildren(content, closeButton);
+}
+
+async function requestReview() {
+  showReviewSummary("AI 회고 요약 생성 중...");
 
   if (!state.dbReady) {
-    summary.textContent = "SQLite가 준비된 Tauri 실행 환경에서 사용할 수 있습니다.";
+    showReviewSummary("SQLite가 준비된 Tauri 실행 환경에서 사용할 수 있습니다.");
     return;
   }
 
   const tasks = state.tasks[state.activeTab] ?? [];
   if (!tasks.length) {
-    summary.textContent = "요약할 태스크가 없습니다.";
+    showReviewSummary("요약할 태스크가 없습니다.");
     return;
   }
 
   const apiKey = await getApiKey();
   if (!apiKey) {
-    summary.textContent = "설정에서 Gemini API Key를 먼저 저장해주세요.";
+    showReviewSummary("설정에서 Gemini API Key를 먼저 저장해주세요.");
     return;
   }
 
@@ -1863,21 +1953,38 @@ async function requestReview() {
 
     if (!response.ok) throw new Error(`Gemini API error: ${response.status}`);
     const data = await response.json();
-    summary.textContent =
+    showReviewSummary(
       data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ||
-      "Gemini 응답에서 요약 텍스트를 찾지 못했습니다.";
+        "Gemini 응답에서 요약 텍스트를 찾지 못했습니다.",
+    );
   } catch (error) {
     console.error(error);
-    summary.textContent = "AI 회고 요약 요청에 실패했습니다.";
+    showReviewSummary("AI 회고 요약 요청에 실패했습니다.");
   }
 }
 
 renderShell();
 
+let sidebarToggleAnimating = false;
 document.querySelector("#sidebar-toggle").addEventListener("click", () => {
+  if (sidebarToggleAnimating) return;
+  sidebarToggleAnimating = true;
+
   const shell = document.querySelector(".shell");
+  const tabsNav = document.querySelector(".tabs");
+  const brand = document.querySelector(".brand");
   const collapsed = shell.dataset.sidebarCollapsed === "true";
-  shell.dataset.sidebarCollapsed = String(!collapsed);
+  tabsNav.classList.add("tabs-fading");
+  brand.classList.add("sidebar-content-fading");
+
+  window.setTimeout(() => {
+    shell.dataset.sidebarCollapsed = String(!collapsed);
+    window.setTimeout(() => {
+      tabsNav.classList.remove("tabs-fading");
+      brand.classList.remove("sidebar-content-fading");
+      sidebarToggleAnimating = false;
+    }, 40);
+  }, 120);
 });
 document.querySelector("#settings-button").addEventListener("click", openSettings);
 document.querySelector("#save-api-key").addEventListener("click", saveSettings);
