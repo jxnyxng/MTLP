@@ -112,19 +112,51 @@ export async function moveTask(
 }
 
 export async function saveApiKey(apiKey) {
-  const database = await initDb();
-  return database.execute(
-    `INSERT OR REPLACE INTO settings (key, value)
-     VALUES ('gemini_api_key', ?)`,
-    [apiKey],
-  );
+  return saveSetting("gemini_api_key", apiKey);
 }
 
 export async function getApiKey() {
+  return getSetting("gemini_api_key", "");
+}
+
+export async function saveThemeId(themeId) {
+  return saveSetting("theme_id", themeId);
+}
+
+export async function getThemeId() {
+  return getSetting("theme_id", "productivity-light");
+}
+
+export async function saveTimelineRange(targetDate, range) {
+  return saveSetting(`timeline_range:${targetDate}`, JSON.stringify(range));
+}
+
+export async function getTimelineRange(targetDate) {
+  const value = await getSetting(`timeline_range:${targetDate}`, "");
+  if (!value) return null;
+
+  try {
+    return JSON.parse(value);
+  } catch {
+    return null;
+  }
+}
+
+async function saveSetting(key, value) {
+  const database = await initDb();
+  return database.execute(
+    `INSERT OR REPLACE INTO settings (key, value)
+     VALUES (?, ?)`,
+    [key, value],
+  );
+}
+
+async function getSetting(key, fallback = "") {
   const database = await initDb();
   const rows = await database.select(
-    "SELECT value FROM settings WHERE key = 'gemini_api_key' LIMIT 1",
+    "SELECT value FROM settings WHERE key = ? LIMIT 1",
+    [key],
   );
 
-  return rows[0]?.value ?? "";
+  return rows[0]?.value ?? fallback;
 }

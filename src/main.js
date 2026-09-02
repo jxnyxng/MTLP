@@ -4,46 +4,365 @@ import {
   addTask,
   deleteTask,
   getApiKey,
+  getThemeId,
   getTasks,
   getTasksByTargetPrefix,
+  getTimelineRange,
   initDb,
   moveTask,
   saveApiKey,
+  saveThemeId,
+  saveTimelineRange,
   updateTaskStatus,
 } from "./db.js";
 
 const tabs = [
-  { id: "YEARLY", label: "Yearly" },
-  { id: "MONTHLY", label: "Monthly" },
-  { id: "WEEKLY", label: "Weekly" },
-  { id: "DAILY", label: "Daily" },
+  { id: "FUTURE", label: "Long-term", shortLabel: "L" },
+  { id: "YEARLY", label: "Yearly", shortLabel: "Y" },
+  { id: "MONTHLY", label: "Monthly", shortLabel: "M" },
+  { id: "WEEKLY", label: "Weekly", shortLabel: "W" },
+  { id: "DAILY", label: "Daily", shortLabel: "D" },
 ];
 
-const hours = Array.from({ length: 20 }, (_, index) => {
-  return `${String(index + 5).padStart(2, "0")}:00`;
+const DEFAULT_TIMELINE_RANGE = { start: 5, end: 24 };
+const timelineHourOptions = Array.from({ length: 25 }, (_, index) => {
+  return `${String(index).padStart(2, "0")}:00`;
 });
+
+const themes = [
+  {
+    id: "productivity-light",
+    mode: "light",
+    name: "Focus Navy Light",
+    description: "Classic Navy / Sage Green",
+    primary: "#1E293B",
+    secondary: "#86EFAC",
+    background: "#F8FAFC",
+    css: {
+      "--color-bg": "#F8FAFC",
+      "--color-bg-rgb": "248 250 252",
+      "--color-surface": "#FFFFFF",
+      "--color-surface-muted": "#F1F5F9",
+      "--color-panel": "#FFFFFF",
+      "--color-sidebar": "#F1F5F9",
+      "--color-sidebar-text": "#334155",
+      "--color-text": "#111827",
+      "--color-muted": "#64748B",
+      "--color-subtle": "#94A3B8",
+      "--color-border": "#D7DEE8",
+      "--color-border-strong": "#B8C3D1",
+      "--color-primary": "#334155",
+      "--color-primary-text": "#FFFFFF",
+      "--color-primary-soft": "#E8EDF3",
+      "--color-secondary": "#A7D7B6",
+      "--color-secondary-soft": "#EEF8F1",
+      "--color-input": "#FFFFFF",
+      "--color-danger": "#DC2626",
+      "--color-danger-soft": "#FEE2E2",
+      "--shadow-panel": "0 1px 2px rgb(15 23 42 / 4%)",
+    },
+  },
+  {
+    id: "diary-light",
+    mode: "light",
+    name: "Teatime Mild Light",
+    description: "Terracotta / Butter Yellow",
+    primary: "#C2410C",
+    secondary: "#FEF08A",
+    background: "#FAF8F5",
+    css: {
+      "--color-bg": "#FAF8F5",
+      "--color-bg-rgb": "250 248 245",
+      "--color-surface": "#FFFDF8",
+      "--color-surface-muted": "#F6F0E9",
+      "--color-panel": "#FFFDF8",
+      "--color-sidebar": "#F3E9DF",
+      "--color-sidebar-text": "#6F4A3A",
+      "--color-text": "#292524",
+      "--color-muted": "#78716C",
+      "--color-subtle": "#A8A29E",
+      "--color-border": "#E7DCCF",
+      "--color-border-strong": "#D6C5B4",
+      "--color-primary": "#9A5A3D",
+      "--color-primary-text": "#FFFDF8",
+      "--color-primary-soft": "#F1E2D7",
+      "--color-secondary": "#E9D981",
+      "--color-secondary-soft": "#FBF4CF",
+      "--color-input": "#FFFFFF",
+      "--color-danger": "#BE123C",
+      "--color-danger-soft": "#FFE4E6",
+      "--shadow-panel": "0 1px 2px rgb(124 45 18 / 5%)",
+    },
+  },
+  {
+    id: "study-light",
+    mode: "light",
+    name: "Calm Study Light",
+    description: "Muted Lavender / Soft Mint",
+    primary: "#6366F1",
+    secondary: "#99F6E4",
+    background: "#FFFFFF",
+    css: {
+      "--color-bg": "#FFFFFF",
+      "--color-bg-rgb": "255 255 255",
+      "--color-surface": "#FFFFFF",
+      "--color-surface-muted": "#F8FAFC",
+      "--color-panel": "#FFFFFF",
+      "--color-sidebar": "#F1F2FB",
+      "--color-sidebar-text": "#41466F",
+      "--color-text": "#1F2937",
+      "--color-muted": "#64748B",
+      "--color-subtle": "#94A3B8",
+      "--color-border": "#DDE2F1",
+      "--color-border-strong": "#BFC7E6",
+      "--color-primary": "#6B6FA8",
+      "--color-primary-text": "#FFFFFF",
+      "--color-primary-soft": "#E9EBF8",
+      "--color-secondary": "#A9DDD4",
+      "--color-secondary-soft": "#EAF8F5",
+      "--color-input": "#FFFFFF",
+      "--color-danger": "#E11D48",
+      "--color-danger-soft": "#FFE4E6",
+      "--shadow-panel": "0 1px 2px rgb(49 46 129 / 5%)",
+    },
+  },
+  {
+    id: "minimal-light",
+    mode: "light",
+    name: "Mono Charcoal Light",
+    description: "Charcoal / Slate Gray",
+    primary: "#111827",
+    secondary: "#9CA3AF",
+    background: "#F9FAFB",
+    css: {
+      "--color-bg": "#F9FAFB",
+      "--color-bg-rgb": "249 250 251",
+      "--color-surface": "#FFFFFF",
+      "--color-surface-muted": "#F3F4F6",
+      "--color-panel": "#FFFFFF",
+      "--color-sidebar": "#F3F4F6",
+      "--color-sidebar-text": "#374151",
+      "--color-text": "#111827",
+      "--color-muted": "#6B7280",
+      "--color-subtle": "#9CA3AF",
+      "--color-border": "#DADDE2",
+      "--color-border-strong": "#B8BEC8",
+      "--color-primary": "#374151",
+      "--color-primary-text": "#FFFFFF",
+      "--color-primary-soft": "#E8EAEE",
+      "--color-secondary": "#B7BCC5",
+      "--color-secondary-soft": "#F4F5F7",
+      "--color-input": "#FFFFFF",
+      "--color-danger": "#B91C1C",
+      "--color-danger-soft": "#FEE2E2",
+      "--shadow-panel": "0 1px 2px rgb(17 24 39 / 4%)",
+    },
+  },
+  {
+    id: "productivity-dark",
+    mode: "dark",
+    name: "Focus Navy Dark",
+    description: "Classic Navy / Sage Green",
+    primary: "#1E293B",
+    secondary: "#86EFAC",
+    background: "#111827",
+    css: {
+      "--color-bg": "#111827",
+      "--color-bg-rgb": "17 24 39",
+      "--color-surface": "#1F2937",
+      "--color-surface-muted": "#263244",
+      "--color-panel": "#182131",
+      "--color-sidebar": "#0F172A",
+      "--color-sidebar-text": "#CBD5E1",
+      "--color-text": "#E5E7EB",
+      "--color-muted": "#A0AEC0",
+      "--color-subtle": "#718096",
+      "--color-border": "#344258",
+      "--color-border-strong": "#475569",
+      "--color-primary": "#CBD5E1",
+      "--color-primary-text": "#111827",
+      "--color-primary-soft": "#263244",
+      "--color-secondary": "#8FCFA3",
+      "--color-secondary-soft": "#1D3B2C",
+      "--color-input": "#111827",
+      "--color-danger": "#FCA5A5",
+      "--color-danger-soft": "#3B1F26",
+      "--shadow-panel": "0 1px 2px rgb(0 0 0 / 18%)",
+    },
+  },
+  {
+    id: "diary-dark",
+    mode: "dark",
+    name: "Teatime Mild Dark",
+    description: "Terracotta / Butter Yellow",
+    primary: "#C2410C",
+    secondary: "#FEF08A",
+    background: "#1C1917",
+    css: {
+      "--color-bg": "#1C1917",
+      "--color-bg-rgb": "28 25 23",
+      "--color-surface": "#292524",
+      "--color-surface-muted": "#332C27",
+      "--color-panel": "#241F1C",
+      "--color-sidebar": "#2A211D",
+      "--color-sidebar-text": "#E7D3C4",
+      "--color-text": "#F5EFE7",
+      "--color-muted": "#C9B8AA",
+      "--color-subtle": "#99887D",
+      "--color-border": "#473B34",
+      "--color-border-strong": "#5C4B41",
+      "--color-primary": "#D6A28B",
+      "--color-primary-text": "#241F1C",
+      "--color-primary-soft": "#3A2B25",
+      "--color-secondary": "#D9CB82",
+      "--color-secondary-soft": "#3A3420",
+      "--color-input": "#1C1917",
+      "--color-danger": "#FDA4AF",
+      "--color-danger-soft": "#3D2028",
+      "--shadow-panel": "0 1px 2px rgb(0 0 0 / 18%)",
+    },
+  },
+  {
+    id: "study-dark",
+    mode: "dark",
+    name: "Calm Study Dark",
+    description: "Muted Lavender / Soft Mint",
+    primary: "#6366F1",
+    secondary: "#99F6E4",
+    background: "#1E1B4B",
+    css: {
+      "--color-bg": "#1E1B4B",
+      "--color-bg-rgb": "30 27 75",
+      "--color-surface": "#272456",
+      "--color-surface-muted": "#302D63",
+      "--color-panel": "#242151",
+      "--color-sidebar": "#1A1842",
+      "--color-sidebar-text": "#DADDF7",
+      "--color-text": "#EEF2FF",
+      "--color-muted": "#B8C0E0",
+      "--color-subtle": "#8D96BF",
+      "--color-border": "#41406D",
+      "--color-border-strong": "#56558A",
+      "--color-primary": "#B8BBE8",
+      "--color-primary-text": "#1E1B4B",
+      "--color-primary-soft": "#343164",
+      "--color-secondary": "#9AD9CF",
+      "--color-secondary-soft": "#1F4546",
+      "--color-input": "#1E1B4B",
+      "--color-danger": "#FDA4AF",
+      "--color-danger-soft": "#432130",
+      "--shadow-panel": "0 1px 2px rgb(0 0 0 / 18%)",
+    },
+  },
+  {
+    id: "minimal-dark",
+    mode: "dark",
+    name: "Mono Charcoal Dark",
+    description: "Charcoal / Slate Gray",
+    primary: "#111827",
+    secondary: "#9CA3AF",
+    background: "#030712",
+    css: {
+      "--color-bg": "#030712",
+      "--color-bg-rgb": "3 7 18",
+      "--color-surface": "#111827",
+      "--color-surface-muted": "#1F2937",
+      "--color-panel": "#0B1120",
+      "--color-sidebar": "#080D19",
+      "--color-sidebar-text": "#D1D5DB",
+      "--color-text": "#E5E7EB",
+      "--color-muted": "#A6ADB8",
+      "--color-subtle": "#7A828F",
+      "--color-border": "#293241",
+      "--color-border-strong": "#3B4556",
+      "--color-primary": "#D1D5DB",
+      "--color-primary-text": "#030712",
+      "--color-primary-soft": "#1F2937",
+      "--color-secondary": "#A6ADB8",
+      "--color-secondary-soft": "#1A2230",
+      "--color-input": "#030712",
+      "--color-danger": "#FCA5A5",
+      "--color-danger-soft": "#341B22",
+      "--shadow-panel": "0 1px 2px rgb(0 0 0 / 20%)",
+    },
+  },
+];
 
 const state = {
   activeTab: "DAILY",
   sideTab: null,
+  isEditing: false,
   dbReady: false,
+  themeId: "productivity-light",
   anchorDate: new Date(),
   tasks: {
+    FUTURE: [],
     YEARLY: [],
     MONTHLY: [],
     WEEKLY: [],
     DAILY: [],
   },
+  futureYearTasks: [],
   yearlyMonthTasks: [],
   monthDailyTasks: [],
   weekDailyTasks: [],
-  periodNavPulse: 0,
+  timelineRanges: {},
+  shouldAnimatePeriod: false,
   detailModal: null,
 };
 
 const app = document.querySelector("#app");
 let dragSourceList = null;
 let pendingDropList = null;
+
+function themeById(themeId) {
+  const legacyThemeIds = {
+    productivity: "productivity-light",
+    diary: "diary-light",
+    study: "study-light",
+    minimal: "minimal-light",
+  };
+  const normalizedThemeId = legacyThemeIds[themeId] ?? themeId;
+  return themes.find((theme) => theme.id === normalizedThemeId) ?? themes[0];
+}
+
+function applyTheme(themeId) {
+  const theme = themeById(themeId);
+  state.themeId = theme.id;
+  document.documentElement.dataset.theme = theme.id;
+  Object.entries(theme.css).forEach(([name, value]) => {
+    document.documentElement.style.setProperty(name, value);
+  });
+}
+
+function normalizeTimelineRange(range) {
+  const start = Number(range?.start);
+  const end = Number(range?.end);
+  if (!Number.isInteger(start) || !Number.isInteger(end)) return DEFAULT_TIMELINE_RANGE;
+  if (start < 0 || end > 24 || start >= end) return DEFAULT_TIMELINE_RANGE;
+  return { start, end };
+}
+
+function hourLabel(hour) {
+  return `${String(hour).padStart(2, "0")}:00`;
+}
+
+function hourValue(timeBlock) {
+  return Number(timeBlock?.split(":")[0]);
+}
+
+function hoursForRange(range) {
+  const normalized = normalizeTimelineRange(range);
+  return Array.from(
+    { length: normalized.end - normalized.start + 1 },
+    (_, index) => hourLabel(normalized.start + index),
+  );
+}
+
+function timelineRangeFor(date, data = state) {
+  const targetDate = targetFor("DAILY", date);
+  return normalizeTimelineRange(data.timelineRange ?? state.timelineRanges[targetDate]);
+}
 
 function toDateKey(date) {
   const year = date.getFullYear();
@@ -62,6 +381,15 @@ function toYearKey(date) {
   return String(date.getFullYear());
 }
 
+function decadeStartYear(date = state.anchorDate) {
+  return Math.floor(date.getFullYear() / 10) * 10;
+}
+
+function futureYears(date = state.anchorDate) {
+  const start = decadeStartYear(date);
+  return Array.from({ length: 10 }, (_, index) => start + index);
+}
+
 function toWeekStartDate(date) {
   const copy = new Date(date);
   const day = copy.getDay() || 7;
@@ -71,6 +399,7 @@ function toWeekStartDate(date) {
 }
 
 function targetFor(periodType, date = state.anchorDate) {
+  if (periodType === "FUTURE") return String(decadeStartYear(date));
   if (periodType === "YEARLY") return toYearKey(date);
   if (periodType === "MONTHLY") return toMonthKey(date);
   if (periodType === "WEEKLY") return toDateKey(toWeekStartDate(date));
@@ -115,6 +444,7 @@ function monthWeeks(date = state.anchorDate) {
 }
 
 function titleFor(periodType) {
+  if (periodType === "FUTURE") return "Long-term Plan";
   if (periodType === "YEARLY") return "Yearly Log";
   if (periodType === "MONTHLY") return "Monthly Log";
   if (periodType === "WEEKLY") return "Weekly Log";
@@ -122,6 +452,10 @@ function titleFor(periodType) {
 }
 
 function rangeLabelFor(periodType) {
+  if (periodType === "FUTURE") {
+    const years = futureYears(state.anchorDate);
+    return `${years[0]} - ${years.at(-1)}`;
+  }
   if (periodType === "YEARLY") return targetFor("YEARLY");
   if (periodType === "MONTHLY") return targetFor("MONTHLY");
   if (periodType === "WEEKLY") {
@@ -135,6 +469,7 @@ function rangeLabelFor(periodType) {
 
 function shiftedPeriodDate(periodType, amount) {
   const next = new Date(state.anchorDate);
+  if (periodType === "FUTURE") next.setFullYear(next.getFullYear() + amount * 10);
   if (periodType === "YEARLY") next.setFullYear(next.getFullYear() + amount);
   if (periodType === "MONTHLY") next.setMonth(next.getMonth() + amount);
   if (periodType === "WEEKLY") next.setDate(next.getDate() + amount * 7);
@@ -143,6 +478,10 @@ function shiftedPeriodDate(periodType, amount) {
 }
 
 function periodLabel(periodType, date) {
+  if (periodType === "FUTURE") {
+    const years = futureYears(date);
+    return `${years[0]} - ${years.at(-1)}`;
+  }
   if (periodType === "YEARLY") return `${date.getFullYear()}년`;
   if (periodType === "MONTHLY") {
     return `${date.getFullYear()}년 ${date.getMonth() + 1}월`;
@@ -157,12 +496,14 @@ function periodLabel(periodType, date) {
 }
 
 function inputTypeFor(periodType) {
+  if (periodType === "FUTURE") return "number";
   if (periodType === "YEARLY") return "number";
   if (periodType === "MONTHLY") return "month";
   return "date";
 }
 
 function dateInputValue(periodType) {
+  if (periodType === "FUTURE") return targetFor("FUTURE");
   if (periodType === "YEARLY") return targetFor("YEARLY");
   if (periodType === "MONTHLY") return targetFor("MONTHLY");
   return toDateKey(state.anchorDate);
@@ -173,30 +514,37 @@ function parseDateInput(periodType, value) {
 
   if (periodType === "YEARLY") {
     state.anchorDate = new Date(Number(value), 0, 1);
-    state.periodNavPulse += 1;
+    state.shouldAnimatePeriod = true;
+    return;
+  }
+
+  if (periodType === "FUTURE") {
+    state.anchorDate = new Date(Number(value), 0, 1);
+    state.shouldAnimatePeriod = true;
     return;
   }
 
   if (periodType === "MONTHLY") {
     const [year, month] = value.split("-").map(Number);
     state.anchorDate = new Date(year, month - 1, 1);
-    state.periodNavPulse += 1;
+    state.shouldAnimatePeriod = true;
     return;
   }
 
   const [year, month, day] = value.split("-").map(Number);
   state.anchorDate = new Date(year, month - 1, day);
-  state.periodNavPulse += 1;
+  state.shouldAnimatePeriod = true;
 }
 
 function shiftDate(periodType, amount) {
   const next = new Date(state.anchorDate);
+  if (periodType === "FUTURE") next.setFullYear(next.getFullYear() + amount * 10);
   if (periodType === "YEARLY") next.setFullYear(next.getFullYear() + amount);
   if (periodType === "MONTHLY") next.setMonth(next.getMonth() + amount);
   if (periodType === "WEEKLY") next.setDate(next.getDate() + amount * 7);
   if (periodType === "DAILY") next.setDate(next.getDate() + amount);
   state.anchorDate = next;
-  state.periodNavPulse += 1;
+  state.shouldAnimatePeriod = true;
 }
 
 function getNextPosition(items) {
@@ -215,7 +563,9 @@ function tasksFor(periodType, timeBlock = null, targetDate = targetFor(periodTyp
       ? [...state.tasks.MONTHLY, ...state.yearlyMonthTasks]
       : periodType === "DAILY"
         ? [...state.tasks.DAILY, ...state.monthDailyTasks, ...state.weekDailyTasks]
-      : state.tasks[periodType];
+        : periodType === "FUTURE"
+          ? state.futureYearTasks
+          : state.tasks[periodType];
   const seen = new Set();
 
   return source.filter((task) => {
@@ -317,7 +667,9 @@ function markDropTarget(list) {
     list.classList.add(list === dragSourceList ? "reorder-list-target" : "drop-list-target");
   }
   const target =
-    list?.closest(".hour-row, .month-card, .day-card, .week-day-card, .weekly-goals") ?? list;
+    list?.closest(
+      ".hour-row, .year-card, .month-card, .day-card, .week-day-card, .period-staging-card",
+    ) ?? list;
   if (target) target.classList.add("drop-target");
 }
 
@@ -401,6 +753,10 @@ function renderShell() {
     <dialog id="settings-modal">
       <form method="dialog" class="modal">
         <h2>설정</h2>
+        <fieldset class="theme-settings">
+          <legend>테마</legend>
+          <div id="theme-options" class="theme-options"></div>
+        </fieldset>
         <label>
           Gemini API Key
           <input id="api-key-input" type="password" autocomplete="off" />
@@ -444,14 +800,96 @@ function renderTabs() {
   );
 }
 
+function renderThemeOptions() {
+  const options = document.querySelector("#theme-options");
+  if (!options) return;
+
+  options.replaceChildren(
+    createThemeGroup("라이트 테마", themes.filter((theme) => theme.mode === "light")),
+    createThemeGroup("다크 테마", themes.filter((theme) => theme.mode === "dark")),
+  );
+}
+
+function createThemeGroup(title, themeList) {
+  const group = document.createElement("section");
+  group.className = "theme-group";
+
+  const heading = document.createElement("h3");
+  heading.textContent = title;
+
+  const grid = document.createElement("div");
+  grid.className = "theme-grid";
+  grid.append(...themeList.map(createThemeOption));
+
+  group.append(heading, grid);
+  return group;
+}
+
+function createThemeOption(theme) {
+  const label = document.createElement("label");
+  label.className = "theme-option";
+  label.style.setProperty("--theme-primary", theme.primary);
+  label.style.setProperty("--theme-secondary", theme.secondary);
+  label.style.setProperty("--theme-bg", theme.background);
+
+  const input = document.createElement("input");
+  input.type = "radio";
+  input.name = "theme";
+  input.value = theme.id;
+  input.checked = theme.id === state.themeId;
+
+  const sample = document.createElement("span");
+  sample.className = "theme-swatch";
+  sample.setAttribute("aria-hidden", "true");
+  sample.innerHTML = "<i></i><i></i><i></i>";
+
+  const text = document.createElement("span");
+  text.className = "theme-option-text";
+  const name = document.createElement("strong");
+  name.textContent = theme.name;
+  const description = document.createElement("small");
+  description.textContent = theme.description;
+
+  text.append(name, description);
+
+  input.addEventListener("change", async () => {
+    applyTheme(theme.id);
+    renderThemeOptions();
+    if (state.dbReady) {
+      await saveThemeId(theme.id);
+      setStatus("테마 저장 완료");
+    }
+  });
+
+  label.append(input, sample, text);
+  return label;
+}
+
 function renderViewActions() {
   const actions = document.querySelector("#view-actions");
+  const editModeButton = document.createElement("button");
+  editModeButton.type = "button";
+  editModeButton.className = "edit-mode-button";
+  editModeButton.textContent = state.isEditing ? "완료" : "수정";
+  editModeButton.title = state.isEditing ? "수정 완료" : "수정 모드로 전환";
+  editModeButton.setAttribute(
+    "aria-label",
+    state.isEditing ? "수정 완료" : "수정 모드로 전환",
+  );
+  editModeButton.setAttribute("aria-pressed", String(state.isEditing));
+  editModeButton.addEventListener("click", async () => {
+    state.isEditing = !state.isEditing;
+    await loadAndRender();
+  });
+
   const companionButtons = tabs
     .filter((tab) => tab.id !== state.activeTab && tab.id !== state.sideTab)
     .map((tab) => {
       const button = document.createElement("button");
       button.type = "button";
-      button.textContent = `${tab.label} 함께 보기`;
+      button.textContent = tab.shortLabel;
+      button.title = `${tab.label} 함께 보기`;
+      button.setAttribute("aria-label", `${tab.label} 함께 보기`);
       button.addEventListener("click", async () => {
         state.sideTab = tab.id;
         await loadAndRender();
@@ -461,14 +899,16 @@ function renderViewActions() {
 
   const closeButton = document.createElement("button");
   closeButton.type = "button";
-  closeButton.textContent = "우측 닫기";
+  closeButton.textContent = ">";
+  closeButton.title = "우측 닫기";
+  closeButton.setAttribute("aria-label", "우측 닫기");
   closeButton.hidden = !state.sideTab;
   closeButton.addEventListener("click", async () => {
     state.sideTab = null;
     await loadAndRender();
   });
 
-  actions.replaceChildren(...companionButtons, closeButton);
+  actions.replaceChildren(editModeButton, ...companionButtons, closeButton);
 }
 
 function renderPeriodNav() {
@@ -480,7 +920,7 @@ function renderPeriodNav() {
 function renderDateControls(container, periodType) {
   const controls = document.createElement("div");
   controls.className = "date-carousel";
-  controls.dataset.pulse = state.periodNavPulse;
+  if (state.shouldAnimatePeriod) controls.classList.add("animate-period");
 
   const previous = document.createElement("button");
   previous.type = "button";
@@ -507,7 +947,7 @@ function renderDateControls(container, periodType) {
   picker.type = inputTypeFor(periodType);
   picker.value = dateInputValue(periodType);
   picker.hidden = true;
-  if (periodType === "YEARLY") {
+  if (periodType === "FUTURE" || periodType === "YEARLY") {
     picker.min = "1900";
     picker.max = "2100";
   }
@@ -549,7 +989,7 @@ function renderDateControls(container, periodType) {
   todayButton.className = "today-button";
   todayButton.addEventListener("click", async () => {
     state.anchorDate = new Date();
-    state.periodNavPulse += 1;
+    state.shouldAnimatePeriod = true;
     await loadAndRender();
   });
 
@@ -585,33 +1025,36 @@ function createTaskItem(task) {
   deleteButton.type = "button";
   deleteButton.textContent = "×";
   deleteButton.title = "삭제";
-  deleteButton.addEventListener("click", async (event) => {
-    event.stopPropagation();
-    if (!state.dbReady) return;
 
-    try {
-      await deleteTask(task.id);
-      setStatus("삭제 완료");
-      await loadAndRender();
-    } catch (error) {
-      console.error(error);
-      setStatus("삭제 실패");
-    }
-  });
+  if (state.isEditing) {
+    deleteButton.addEventListener("click", async (event) => {
+      event.stopPropagation();
+      if (!state.dbReady) return;
 
-  item.addEventListener("contextmenu", async (event) => {
-    event.preventDefault();
-    if (!state.dbReady) return;
+      try {
+        await deleteTask(task.id);
+        setStatus("삭제 완료");
+        await loadAndRender();
+      } catch (error) {
+        console.error(error);
+        setStatus("삭제 실패");
+      }
+    });
 
-    try {
-      await updateTaskStatus(task.id, task.status === "DONE" ? "TODO" : "DONE");
-      setStatus("상태 저장 완료");
-      await loadAndRender();
-    } catch (error) {
-      console.error(error);
-      setStatus("상태 저장 실패");
-    }
-  });
+    item.addEventListener("contextmenu", async (event) => {
+      event.preventDefault();
+      if (!state.dbReady) return;
+
+      try {
+        await updateTaskStatus(task.id, task.status === "DONE" ? "TODO" : "DONE");
+        setStatus("상태 저장 완료");
+        await loadAndRender();
+      } catch (error) {
+        console.error(error);
+        setStatus("상태 저장 실패");
+      }
+    });
+  }
 
   item.append(handle, bullet, content, deleteButton);
   return item;
@@ -680,15 +1123,23 @@ function createEntryInput(
   return row;
 }
 
+function createEmptyReadItem() {
+  const row = document.createElement("li");
+  row.className = "empty-read-row";
+  row.setAttribute("aria-hidden", "true");
+  return row;
+}
+
 function renderTaskList(list, periodType, tasks, placeholder) {
+  const taskItems = tasks.map(createTaskItem);
+  if (!state.isEditing) {
+    list.replaceChildren(...(taskItems.length ? taskItems : [createEmptyReadItem()]));
+    return;
+  }
+
   list.replaceChildren(
-    ...tasks.map(createTaskItem),
-    createEntryInput(
-      periodType,
-      placeholder,
-      list.dataset.timeBlock ?? null,
-      list.dataset.targetDate,
-    ),
+    ...taskItems,
+    createEntryInput(periodType, placeholder, list.dataset.timeBlock ?? null, list.dataset.targetDate),
   );
 }
 
@@ -712,7 +1163,9 @@ function createPanel(
   if (isDetail) panel.classList.add("detail-panel");
   panel.setAttribute("aria-label", titleFor(periodType));
 
-  if (periodType === "YEARLY") {
+  if (periodType === "FUTURE") {
+    renderFuturePanel(panel, data, anchorDate);
+  } else if (periodType === "YEARLY") {
     renderYearlyPanel(panel, data, anchorDate, isDetail);
   } else if (periodType === "MONTHLY") {
     renderMonthlyPanel(panel, data, anchorDate, isDetail);
@@ -729,6 +1182,43 @@ function createPanel(
 
 function monthTarget(year, monthIndex) {
   return `${year}-${String(monthIndex + 1).padStart(2, "0")}`;
+}
+
+function renderFuturePanel(panel, data = state, anchorDate = state.anchorDate) {
+  const grid = document.createElement("div");
+  grid.className = "year-grid";
+
+  for (const year of futureYears(anchorDate)) {
+    const card = document.createElement("section");
+    card.className = "year-card";
+
+    const heading = document.createElement("h3");
+    const headingButton = document.createElement("button");
+    headingButton.className = "heading-link";
+    headingButton.type = "button";
+    headingButton.textContent = `${year} Goals`;
+    headingButton.addEventListener("click", async () => {
+      await openDetailModal("YEARLY", new Date(year, 0, 1));
+    });
+    heading.append(headingButton);
+
+    const list = document.createElement("ul");
+    list.className = "task-list year-task-list";
+    list.dataset.periodType = "YEARLY";
+    list.dataset.targetDate = String(year);
+
+    renderTaskList(
+      list,
+      "YEARLY",
+      data.futureYearTasks.filter((task) => task.target_date === list.dataset.targetDate),
+      `${year} 목표`,
+    );
+
+    card.append(heading, createTaskStack(list));
+    grid.append(card);
+  }
+
+  panel.append(grid);
 }
 
 function renderYearlyPanel(panel, data = state, anchorDate = state.anchorDate) {
@@ -770,6 +1260,20 @@ function renderYearlyPanel(panel, data = state, anchorDate = state.anchorDate) {
 }
 
 function renderMonthlyPanel(panel, data = state, anchorDate = state.anchorDate) {
+  const board = document.createElement("div");
+  board.className = "monthly-board";
+
+  const monthGoals = document.createElement("section");
+  monthGoals.className = "period-staging-card monthly-goals";
+  const monthGoalsTitle = document.createElement("h3");
+  monthGoalsTitle.textContent = "This Month";
+  const monthGoalsList = document.createElement("ul");
+  monthGoalsList.className = "task-list";
+  monthGoalsList.dataset.periodType = "MONTHLY";
+  monthGoalsList.dataset.targetDate = targetFor("MONTHLY", anchorDate);
+  renderTaskList(monthGoalsList, "MONTHLY", data.tasks.MONTHLY, "Monthly task");
+  monthGoals.append(monthGoalsTitle, createTaskStack(monthGoalsList));
+
   const weekList = document.createElement("div");
   weekList.className = "month-week-list";
 
@@ -841,7 +1345,8 @@ function renderMonthlyPanel(panel, data = state, anchorDate = state.anchorDate) 
     weekList.append(section);
   });
 
-  panel.append(weekList);
+  board.append(monthGoals, weekList);
+  panel.append(board);
 }
 
 function renderWeeklyPanel(panel, data = state, anchorDate = state.anchorDate) {
@@ -849,7 +1354,7 @@ function renderWeeklyPanel(panel, data = state, anchorDate = state.anchorDate) {
   wrap.className = "weekly-board";
 
   const goals = document.createElement("section");
-  goals.className = "weekly-goals";
+  goals.className = "period-staging-card weekly-goals";
   const goalsTitle = document.createElement("h3");
   goalsTitle.textContent = "This Week";
   const goalsList = document.createElement("ul");
@@ -906,26 +1411,91 @@ function renderPeriodPanel(panel, periodType, data = state, anchorDate = state.a
   panel.append(createTaskStack(list));
 }
 
-function renderDailyPanel(panel, data = state, anchorDate = state.anchorDate) {
-  const timeline = document.createElement("div");
-  timeline.className = "timeline";
+function createTimelineRangeControls(anchorDate, range) {
+  const controls = document.createElement("div");
+  controls.className = "timeline-range-controls";
 
-  const allDay = document.createElement("section");
-  allDay.className = "hour-row all-day-row";
-  const allDayLabel = document.createElement("strong");
-  allDayLabel.textContent = "All-day";
-  const allDayList = document.createElement("ul");
-  allDayList.className = "task-list compact";
-  allDayList.dataset.periodType = "DAILY";
-  allDayList.dataset.targetDate = targetFor("DAILY", anchorDate);
+  const startSelect = document.createElement("select");
+  startSelect.setAttribute("aria-label", "시작 시간");
+
+  const endSelect = document.createElement("select");
+  endSelect.setAttribute("aria-label", "끝 시간");
+
+  timelineHourOptions.forEach((label, hour) => {
+    if (hour < 24) {
+      const startOption = document.createElement("option");
+      startOption.value = String(hour);
+      startOption.textContent = label;
+      startSelect.append(startOption);
+    }
+
+    if (hour > 0) {
+      const endOption = document.createElement("option");
+      endOption.value = String(hour);
+      endOption.textContent = label;
+      endSelect.append(endOption);
+    }
+  });
+
+  startSelect.value = String(range.start);
+  endSelect.value = String(range.end);
+
+  const saveRange = async () => {
+    let start = Number(startSelect.value);
+    let end = Number(endSelect.value);
+    if (start >= end) {
+      if (document.activeElement === startSelect) {
+        end = Math.min(24, start + 1);
+        endSelect.value = String(end);
+      } else {
+        start = Math.max(0, end - 1);
+        startSelect.value = String(start);
+      }
+    }
+
+    const targetDate = targetFor("DAILY", anchorDate);
+    const nextRange = { start, end };
+    state.timelineRanges[targetDate] = nextRange;
+    if (state.dbReady) await saveTimelineRange(targetDate, nextRange);
+    setStatus("시간 범위 저장 완료");
+    await loadAndRender();
+  };
+
+  startSelect.addEventListener("change", saveRange);
+  endSelect.addEventListener("change", saveRange);
+
+  const separator = document.createElement("span");
+  separator.textContent = "-";
+
+  controls.append(startSelect, separator, endSelect);
+  return controls;
+}
+
+function renderDailyPanel(panel, data = state, anchorDate = state.anchorDate) {
+  const board = document.createElement("div");
+  board.className = "daily-board";
+  const range = timelineRangeFor(anchorDate, data);
+
+  const today = document.createElement("section");
+  today.className = "period-staging-card today-goals";
+  const todayTitle = document.createElement("h3");
+  const todayTitleText = document.createElement("span");
+  todayTitleText.textContent = "This Day";
+  todayTitle.append(todayTitleText, createTimelineRangeControls(anchorDate, range));
+  const todayList = document.createElement("ul");
+  todayList.className = "task-list";
+  todayList.dataset.periodType = "DAILY";
+  todayList.dataset.targetDate = targetFor("DAILY", anchorDate);
   renderTaskList(
-    allDayList,
+    todayList,
     "DAILY",
     data.tasks.DAILY.filter((task) => !task.time_block),
-    "Plan this day",
+    "Daily task",
   );
-  allDay.append(allDayLabel, createTaskStack(allDayList));
-  timeline.append(allDay);
+  today.append(todayTitle, createTaskStack(todayList));
+
+  const timeline = document.createElement("div");
+  timeline.className = "timeline";
 
   const hourColumns = document.createElement("div");
   hourColumns.className = "timeline-columns";
@@ -936,7 +1506,18 @@ function renderDailyPanel(panel, data = state, anchorDate = state.anchorDate) {
   const rightColumn = document.createElement("div");
   rightColumn.className = "timeline-column";
 
-  hours.forEach((hour, index) => {
+  const visibleHours = hoursForRange(range);
+  const selectedHours = new Set(visibleHours);
+  const outsideTaskHours = [
+    ...new Set(
+      data.tasks.DAILY
+        .map((task) => task.time_block)
+        .filter((timeBlock) => timeBlock && !selectedHours.has(timeBlock)),
+    ),
+  ].sort((left, right) => hourValue(left) - hourValue(right));
+  const timelineHours = [...visibleHours, ...outsideTaskHours];
+
+  timelineHours.forEach((hour, index) => {
     const row = document.createElement("section");
     row.className = "hour-row";
 
@@ -956,13 +1537,14 @@ function renderDailyPanel(panel, data = state, anchorDate = state.anchorDate) {
     );
 
     row.append(label, createTaskStack(list));
-    (index < hours.length / 2 ? leftColumn : rightColumn).append(row);
+    (index < timelineHours.length / 2 ? leftColumn : rightColumn).append(row);
   });
 
   hourColumns.append(leftColumn, rightColumn);
   timeline.append(hourColumns);
 
-  panel.append(timeline);
+  board.append(today, timeline);
+  panel.append(board);
 }
 
 async function openDetailModal(periodType, anchorDate) {
@@ -1002,6 +1584,8 @@ async function renderDetailModal() {
 }
 
 function bindSortables() {
+  if (!state.isEditing) return;
+
   document.querySelectorAll(".task-list").forEach((list) => {
     Sortable.create(list, {
       group: {
@@ -1070,42 +1654,64 @@ async function loadTasks() {
   state.tasks.MONTHLY = data.tasks.MONTHLY;
   state.tasks.WEEKLY = data.tasks.WEEKLY;
   state.tasks.DAILY = data.tasks.DAILY;
+  state.tasks.FUTURE = data.tasks.FUTURE;
+  state.futureYearTasks = data.futureYearTasks;
   state.yearlyMonthTasks = data.yearlyMonthTasks;
   state.monthDailyTasks = data.monthDailyTasks;
   state.weekDailyTasks = data.weekDailyTasks;
+  state.timelineRanges[targetFor("DAILY", state.anchorDate)] = data.timelineRange;
 }
 
 async function loadTaskData(anchorDate) {
   const weekTargets = weekDates(anchorDate).map(toDateKey);
-  const [yearly, monthly, weekly, daily, yearlyMonthTasks, monthDailyTasks, weekDailyGroups] =
-    await Promise.all([
+  const yearTargets = futureYears(anchorDate).map(String);
+  const dailyTargetDate = targetFor("DAILY", anchorDate);
+  const [
+    futureYearGroups,
+    yearly,
+    monthly,
+    weekly,
+    daily,
+    yearlyMonthTasks,
+    monthDailyTasks,
+    weekDailyGroups,
+    timelineRange,
+  ] = await Promise.all([
+      Promise.all(yearTargets.map((targetDate) => getTasks("YEARLY", targetDate))),
       getTasks("YEARLY", targetFor("YEARLY", anchorDate)),
       getTasks("MONTHLY", targetFor("MONTHLY", anchorDate)),
       getTasks("WEEKLY", targetFor("WEEKLY", anchorDate)),
-      getTasks("DAILY", targetFor("DAILY", anchorDate)),
+      getTasks("DAILY", dailyTargetDate),
       getTasksByTargetPrefix("MONTHLY", `${targetFor("YEARLY", anchorDate)}-`),
       getTasksByTargetPrefix("DAILY", `${targetFor("MONTHLY", anchorDate)}-`),
       Promise.all(weekTargets.map((targetDate) => getTasks("DAILY", targetDate))),
+      getTimelineRange(dailyTargetDate),
     ]);
+  const futureYearTasks = futureYearGroups.flat();
 
   return {
     tasks: {
+      FUTURE: futureYearTasks,
       YEARLY: yearly,
       MONTHLY: monthly,
       WEEKLY: weekly,
       DAILY: daily,
     },
+    futureYearTasks,
     yearlyMonthTasks,
     monthDailyTasks,
     weekDailyTasks: weekDailyGroups.flat(),
+    timelineRange: normalizeTimelineRange(timelineRange),
   };
 }
 
 async function loadAndRender() {
   await loadTasks();
+  document.body.classList.toggle("is-editing", state.isEditing);
   renderTabs();
   renderViewActions();
   renderPeriodNav();
+  state.shouldAnimatePeriod = false;
 
   document.querySelector("#view-title").textContent = titleFor(state.activeTab);
   document.querySelector("#view-meta").textContent = rangeLabelFor(state.activeTab);
@@ -1125,14 +1731,17 @@ async function openSettings() {
   const modal = document.querySelector("#settings-modal");
   const input = document.querySelector("#api-key-input");
   input.value = state.dbReady ? await getApiKey() : "";
+  renderThemeOptions();
   modal.showModal();
 }
 
 async function saveSettings() {
   const input = document.querySelector("#api-key-input");
   const apiKey = input.value.trim();
-  if (!apiKey || !state.dbReady) return;
-  await saveApiKey(apiKey);
+  if (apiKey && state.dbReady) {
+    await saveApiKey(apiKey);
+    setStatus("설정 저장 완료");
+  }
   document.querySelector("#settings-modal").close();
 }
 
@@ -1208,8 +1817,10 @@ document.querySelector("#detail-modal").addEventListener("close", () => {
 try {
   await initDb();
   state.dbReady = true;
+  applyTheme(await getThemeId());
   setStatus("SQLite 준비 완료");
 } catch (error) {
+  applyTheme(state.themeId);
   setStatus("Tauri 환경에서 SQLite를 초기화할 수 있습니다.");
   console.error(error);
 }
