@@ -13,15 +13,16 @@ import {
   saveApiKey,
   saveThemeId,
   saveTimelineRange,
+  updateTaskContent,
   updateTaskStatus,
 } from "./db.js";
 
 const tabs = [
-  { id: "FUTURE", label: "Long-term", shortLabel: "L" },
-  { id: "YEARLY", label: "Yearly", shortLabel: "Y" },
-  { id: "MONTHLY", label: "Monthly", shortLabel: "M" },
-  { id: "WEEKLY", label: "Weekly", shortLabel: "W" },
-  { id: "DAILY", label: "Daily", shortLabel: "D" },
+  { id: "FUTURE", label: "Long-term", icon: "L" },
+  { id: "YEARLY", label: "Yearly", icon: "Y" },
+  { id: "MONTHLY", label: "Monthly", icon: "M" },
+  { id: "WEEKLY", label: "Weekly", icon: "W" },
+  { id: "DAILY", label: "Daily", icon: "D" },
 ];
 
 const DEFAULT_TIMELINE_RANGE = { start: 5, end: 24 };
@@ -31,258 +32,162 @@ const timelineHourOptions = Array.from({ length: 25 }, (_, index) => {
 
 const themes = [
   {
-    id: "productivity-light",
+    id: "sage-graphite-light",
     mode: "light",
-    name: "Focus Navy Light",
-    description: "Classic Navy / Sage Green",
-    primary: "#1E293B",
-    secondary: "#86EFAC",
-    background: "#F8FAFC",
+    name: "Sage Graphite",
+    description: "Sage / Graphite",
+    primary: "#3F6256",
+    secondary: "#8BAE9B",
+    background: "#F7F9F7",
     css: {
-      "--color-bg": "#F8FAFC",
-      "--color-bg-rgb": "248 250 252",
+      "--color-bg": "#F7F9F7",
+      "--color-bg-rgb": "247 249 247",
       "--color-surface": "#FFFFFF",
-      "--color-surface-muted": "#F1F5F9",
+      "--color-surface-muted": "#F1F5F2",
       "--color-panel": "#FFFFFF",
-      "--color-sidebar": "#F1F5F9",
-      "--color-sidebar-text": "#334155",
-      "--color-text": "#111827",
-      "--color-muted": "#64748B",
-      "--color-subtle": "#94A3B8",
-      "--color-border": "#D7DEE8",
-      "--color-border-strong": "#B8C3D1",
-      "--color-primary": "#334155",
+      "--color-sidebar": "#EEF3EF",
+      "--color-sidebar-text": "#34433C",
+      "--color-text": "#1D2622",
+      "--color-muted": "#66736D",
+      "--color-subtle": "#9AA7A0",
+      "--color-border": "#D8E1DC",
+      "--color-border-strong": "#B7C5BD",
+      "--color-primary": "#3F6256",
       "--color-primary-text": "#FFFFFF",
-      "--color-primary-soft": "#E8EDF3",
-      "--color-secondary": "#A7D7B6",
-      "--color-secondary-soft": "#EEF8F1",
+      "--color-primary-soft": "#E3ECE7",
+      "--color-secondary": "#8BAE9B",
+      "--color-secondary-soft": "#EDF5F0",
       "--color-input": "#FFFFFF",
-      "--color-danger": "#DC2626",
-      "--color-danger-soft": "#FEE2E2",
-      "--shadow-panel": "0 1px 2px rgb(15 23 42 / 4%)",
+      "--color-danger": "#B4232A",
+      "--color-danger-soft": "#FBE7E9",
+      "--shadow-panel": "0 1px 2px rgb(29 38 34 / 4%)",
     },
   },
   {
-    id: "diary-light",
+    id: "mist-blue-light",
     mode: "light",
-    name: "Teatime Mild Light",
-    description: "Terracotta / Butter Yellow",
-    primary: "#C2410C",
-    secondary: "#FEF08A",
-    background: "#FAF8F5",
+    name: "Mist Blue",
+    description: "Mist / Steel Blue",
+    primary: "#3F5F8A",
+    secondary: "#77A6B6",
+    background: "#F7F9FC",
     css: {
-      "--color-bg": "#FAF8F5",
-      "--color-bg-rgb": "250 248 245",
-      "--color-surface": "#FFFDF8",
-      "--color-surface-muted": "#F6F0E9",
-      "--color-panel": "#FFFDF8",
-      "--color-sidebar": "#F3E9DF",
-      "--color-sidebar-text": "#6F4A3A",
-      "--color-text": "#292524",
-      "--color-muted": "#78716C",
-      "--color-subtle": "#A8A29E",
-      "--color-border": "#E7DCCF",
-      "--color-border-strong": "#D6C5B4",
-      "--color-primary": "#9A5A3D",
-      "--color-primary-text": "#FFFDF8",
-      "--color-primary-soft": "#F1E2D7",
-      "--color-secondary": "#E9D981",
-      "--color-secondary-soft": "#FBF4CF",
-      "--color-input": "#FFFFFF",
-      "--color-danger": "#BE123C",
-      "--color-danger-soft": "#FFE4E6",
-      "--shadow-panel": "0 1px 2px rgb(124 45 18 / 5%)",
-    },
-  },
-  {
-    id: "study-light",
-    mode: "light",
-    name: "Calm Study Light",
-    description: "Muted Lavender / Soft Mint",
-    primary: "#6366F1",
-    secondary: "#99F6E4",
-    background: "#FFFFFF",
-    css: {
-      "--color-bg": "#FFFFFF",
-      "--color-bg-rgb": "255 255 255",
+      "--color-bg": "#F7F9FC",
+      "--color-bg-rgb": "247 249 252",
       "--color-surface": "#FFFFFF",
-      "--color-surface-muted": "#F8FAFC",
+      "--color-surface-muted": "#F1F4F8",
       "--color-panel": "#FFFFFF",
-      "--color-sidebar": "#F1F2FB",
-      "--color-sidebar-text": "#41466F",
-      "--color-text": "#1F2937",
-      "--color-muted": "#64748B",
-      "--color-subtle": "#94A3B8",
-      "--color-border": "#DDE2F1",
-      "--color-border-strong": "#BFC7E6",
-      "--color-primary": "#6B6FA8",
+      "--color-sidebar": "#EEF3F8",
+      "--color-sidebar-text": "#344254",
+      "--color-text": "#172033",
+      "--color-muted": "#68758A",
+      "--color-subtle": "#9AA7B8",
+      "--color-border": "#D8E0EA",
+      "--color-border-strong": "#B8C5D4",
+      "--color-primary": "#3F5F8A",
       "--color-primary-text": "#FFFFFF",
-      "--color-primary-soft": "#E9EBF8",
-      "--color-secondary": "#A9DDD4",
-      "--color-secondary-soft": "#EAF8F5",
+      "--color-primary-soft": "#E5EDF6",
+      "--color-secondary": "#77A6B6",
+      "--color-secondary-soft": "#E7F3F6",
       "--color-input": "#FFFFFF",
-      "--color-danger": "#E11D48",
-      "--color-danger-soft": "#FFE4E6",
-      "--shadow-panel": "0 1px 2px rgb(49 46 129 / 5%)",
+      "--color-danger": "#B4232A",
+      "--color-danger-soft": "#FBE7E9",
+      "--shadow-panel": "0 1px 2px rgb(23 32 51 / 4%)",
     },
   },
   {
-    id: "minimal-light",
+    id: "ink-lavender-light",
     mode: "light",
-    name: "Mono Charcoal Light",
-    description: "Charcoal / Slate Gray",
-    primary: "#111827",
-    secondary: "#9CA3AF",
-    background: "#F9FAFB",
+    name: "Ink Lavender",
+    description: "Ink / Muted Lavender",
+    primary: "#5A5F8F",
+    secondary: "#9AA7C8",
+    background: "#F8F8FC",
     css: {
-      "--color-bg": "#F9FAFB",
-      "--color-bg-rgb": "249 250 251",
+      "--color-bg": "#F8F8FC",
+      "--color-bg-rgb": "248 248 252",
       "--color-surface": "#FFFFFF",
-      "--color-surface-muted": "#F3F4F6",
+      "--color-surface-muted": "#F2F3FA",
       "--color-panel": "#FFFFFF",
-      "--color-sidebar": "#F3F4F6",
-      "--color-sidebar-text": "#374151",
-      "--color-text": "#111827",
-      "--color-muted": "#6B7280",
-      "--color-subtle": "#9CA3AF",
-      "--color-border": "#DADDE2",
-      "--color-border-strong": "#B8BEC8",
-      "--color-primary": "#374151",
+      "--color-sidebar": "#F0F1F8",
+      "--color-sidebar-text": "#41445F",
+      "--color-text": "#202235",
+      "--color-muted": "#6D7086",
+      "--color-subtle": "#A0A3B8",
+      "--color-border": "#DCDDEC",
+      "--color-border-strong": "#BFC2D8",
+      "--color-primary": "#5A5F8F",
       "--color-primary-text": "#FFFFFF",
-      "--color-primary-soft": "#E8EAEE",
-      "--color-secondary": "#B7BCC5",
-      "--color-secondary-soft": "#F4F5F7",
+      "--color-primary-soft": "#E8EAF5",
+      "--color-secondary": "#9AA7C8",
+      "--color-secondary-soft": "#EFF2FA",
       "--color-input": "#FFFFFF",
-      "--color-danger": "#B91C1C",
-      "--color-danger-soft": "#FEE2E2",
-      "--shadow-panel": "0 1px 2px rgb(17 24 39 / 4%)",
+      "--color-danger": "#B4232A",
+      "--color-danger-soft": "#FBE7E9",
+      "--shadow-panel": "0 1px 2px rgb(32 34 53 / 4%)",
     },
   },
   {
-    id: "productivity-dark",
+    id: "graphite-blue-dark",
     mode: "dark",
-    name: "Focus Dusk Dark",
-    description: "Slate / Fresh Green",
-    primary: "#9DB7D5",
-    secondary: "#8ED6A7",
-    background: "#1F2933",
+    name: "Graphite Blue",
+    description: "Graphite / Blue",
+    primary: "#AFC3DD",
+    secondary: "#86B8C6",
+    background: "#20242B",
     css: {
-      "--color-bg": "#1F2933",
-      "--color-bg-rgb": "31 41 51",
-      "--color-surface": "#2B3642",
-      "--color-surface-muted": "#35424F",
-      "--color-panel": "#26313D",
-      "--color-sidebar": "#25303B",
-      "--color-sidebar-text": "#D7E0EA",
-      "--color-text": "#F3F6F9",
-      "--color-muted": "#C2CBD6",
-      "--color-subtle": "#9AA8B7",
-      "--color-border": "#465465",
-      "--color-border-strong": "#607085",
-      "--color-primary": "#B7CDE4",
-      "--color-primary-text": "#1F2933",
-      "--color-primary-soft": "#3B4857",
-      "--color-secondary": "#8ED6A7",
-      "--color-secondary-soft": "#2F4A3B",
-      "--color-input": "#303B47",
+      "--color-bg": "#20242B",
+      "--color-bg-rgb": "32 36 43",
+      "--color-surface": "#2A2F38",
+      "--color-surface-muted": "#343B46",
+      "--color-panel": "#282D35",
+      "--color-sidebar": "#252A32",
+      "--color-sidebar-text": "#E1E8EF",
+      "--color-text": "#F2F5F8",
+      "--color-muted": "#B9C2CC",
+      "--color-subtle": "#8D99A7",
+      "--color-border": "#454D59",
+      "--color-border-strong": "#5E6977",
+      "--color-primary": "#AFC3DD",
+      "--color-primary-text": "#20242B",
+      "--color-primary-soft": "#374354",
+      "--color-secondary": "#86B8C6",
+      "--color-secondary-soft": "#2E4650",
+      "--color-input": "#303741",
       "--color-danger": "#FCA5A5",
-      "--color-danger-soft": "#563039",
+      "--color-danger-soft": "#563238",
       "--shadow-panel": "0 1px 2px rgb(0 0 0 / 12%)",
     },
   },
   {
-    id: "diary-dark",
+    id: "forest-ink-dark",
     mode: "dark",
-    name: "Teatime Dusk Dark",
-    description: "Rosewood / Honey",
-    primary: "#E1A38B",
-    secondary: "#E8D687",
-    background: "#2A2421",
+    name: "Forest Ink",
+    description: "Forest / Ink",
+    primary: "#A9CDBD",
+    secondary: "#8FAE9C",
+    background: "#202622",
     css: {
-      "--color-bg": "#2A2421",
-      "--color-bg-rgb": "42 36 33",
-      "--color-surface": "#39312D",
-      "--color-surface-muted": "#453B35",
-      "--color-panel": "#342C28",
-      "--color-sidebar": "#332A26",
-      "--color-sidebar-text": "#F0DED1",
-      "--color-text": "#FFF7EF",
-      "--color-muted": "#D7C3B4",
-      "--color-subtle": "#AE9889",
-      "--color-border": "#5B4D45",
-      "--color-border-strong": "#756256",
-      "--color-primary": "#E1A38B",
-      "--color-primary-text": "#2A2421",
-      "--color-primary-soft": "#574138",
-      "--color-secondary": "#E8D687",
-      "--color-secondary-soft": "#514A2E",
-      "--color-input": "#3D342F",
-      "--color-danger": "#FDA4AF",
-      "--color-danger-soft": "#59313A",
-      "--shadow-panel": "0 1px 2px rgb(0 0 0 / 12%)",
-    },
-  },
-  {
-    id: "study-dark",
-    mode: "dark",
-    name: "Calm Study Dusk",
-    description: "Periwinkle / Mint",
-    primary: "#B8BCEB",
-    secondary: "#9AD9CF",
-    background: "#2A2D46",
-    css: {
-      "--color-bg": "#2A2D46",
-      "--color-bg-rgb": "42 45 70",
-      "--color-surface": "#363A56",
-      "--color-surface-muted": "#424761",
-      "--color-panel": "#31354F",
-      "--color-sidebar": "#2D314A",
-      "--color-sidebar-text": "#E4E7FA",
-      "--color-text": "#F7F8FF",
-      "--color-muted": "#CDD4EC",
-      "--color-subtle": "#A8B0D0",
-      "--color-border": "#555B78",
-      "--color-border-strong": "#707796",
-      "--color-primary": "#C4C7F2",
-      "--color-primary-text": "#2A2D46",
-      "--color-primary-soft": "#494E6B",
-      "--color-secondary": "#9AD9CF",
-      "--color-secondary-soft": "#315557",
-      "--color-input": "#3B405B",
-      "--color-danger": "#FDA4AF",
-      "--color-danger-soft": "#5A3445",
-      "--shadow-panel": "0 1px 2px rgb(0 0 0 / 12%)",
-    },
-  },
-  {
-    id: "minimal-dark",
-    mode: "dark",
-    name: "Soft Graphite Dark",
-    description: "Graphite / Cool Gray",
-    primary: "#D4DAE3",
-    secondary: "#AEB8C5",
-    background: "#242832",
-    css: {
-      "--color-bg": "#242832",
-      "--color-bg-rgb": "36 40 50",
-      "--color-surface": "#303641",
-      "--color-surface-muted": "#3B424F",
-      "--color-panel": "#2B303A",
-      "--color-sidebar": "#2A2F39",
-      "--color-sidebar-text": "#E0E4EA",
-      "--color-text": "#F4F6F8",
-      "--color-muted": "#C7CDD6",
-      "--color-subtle": "#9EA7B3",
-      "--color-border": "#4C5563",
-      "--color-border-strong": "#687382",
-      "--color-primary": "#D4DAE3",
-      "--color-primary-text": "#242832",
-      "--color-primary-soft": "#444C59",
-      "--color-secondary": "#AEB8C5",
-      "--color-secondary-soft": "#3D4652",
-      "--color-input": "#353B46",
+      "--color-bg": "#202622",
+      "--color-bg-rgb": "32 38 34",
+      "--color-surface": "#2A312C",
+      "--color-surface-muted": "#343D37",
+      "--color-panel": "#28302A",
+      "--color-sidebar": "#252C28",
+      "--color-sidebar-text": "#E0EAE3",
+      "--color-text": "#F0F5F1",
+      "--color-muted": "#B8C5BD",
+      "--color-subtle": "#8FA097",
+      "--color-border": "#435047",
+      "--color-border-strong": "#5C6B61",
+      "--color-primary": "#A9CDBD",
+      "--color-primary-text": "#202622",
+      "--color-primary-soft": "#34473D",
+      "--color-secondary": "#8FAE9C",
+      "--color-secondary-soft": "#304238",
+      "--color-input": "#303932",
       "--color-danger": "#FCA5A5",
-      "--color-danger-soft": "#563039",
+      "--color-danger-soft": "#563238",
       "--shadow-panel": "0 1px 2px rgb(0 0 0 / 12%)",
     },
   },
@@ -291,10 +196,11 @@ const themes = [
 const state = {
   activeTab: "DAILY",
   sideTab: null,
+  sidePanelOpen: false,
   isEditing: true,
   isLocked: false,
   dbReady: false,
-  themeId: "productivity-light",
+  themeId: "sage-graphite-light",
   anchorDate: new Date(),
   tasks: {
     FUTURE: [],
@@ -318,10 +224,18 @@ let pendingDropList = null;
 
 function themeById(themeId) {
   const legacyThemeIds = {
-    productivity: "productivity-light",
-    diary: "diary-light",
-    study: "study-light",
-    minimal: "minimal-light",
+    productivity: "sage-graphite-light",
+    "productivity-light": "sage-graphite-light",
+    diary: "mist-blue-light",
+    "diary-light": "mist-blue-light",
+    study: "ink-lavender-light",
+    "study-light": "ink-lavender-light",
+    minimal: "sage-graphite-light",
+    "minimal-light": "sage-graphite-light",
+    "productivity-dark": "graphite-blue-dark",
+    "diary-dark": "forest-ink-dark",
+    "study-dark": "graphite-blue-dark",
+    "minimal-dark": "graphite-blue-dark",
   };
   const normalizedThemeId = legacyThemeIds[themeId] ?? themeId;
   return themes.find((theme) => theme.id === normalizedThemeId) ?? themes[0];
@@ -761,8 +675,14 @@ function renderShell() {
         </div>
         <nav class="tabs" aria-label="Planner views"></nav>
         <div class="sidebar-actions">
-          <button id="review-button" type="button">AI 회고 요약</button>
-          <button id="settings-button" type="button">설정</button>
+          <button id="review-button" type="button" aria-label="AI 회고 요약">
+            <span class="sidebar-action-icon" aria-hidden="true">✦</span>
+            <span class="sidebar-action-label">AI 회고 요약</span>
+          </button>
+          <button id="settings-button" type="button" aria-label="설정">
+            <span class="sidebar-action-icon settings-action-icon" aria-hidden="true">⚙</span>
+            <span class="sidebar-action-label">설정</span>
+          </button>
         </div>
       </aside>
       <section class="workspace">
@@ -823,18 +743,20 @@ function renderTabs() {
       button.title = tab.label;
       button.setAttribute("aria-label", tab.label);
 
+      const icon = document.createElement("span");
+      icon.className = "tab-icon";
+      icon.textContent = tab.icon;
+      icon.setAttribute("aria-hidden", "true");
+
       const label = document.createElement("span");
       label.className = "tab-label";
-      label.textContent = tab.label;
+      label.textContent = tab.label.toLowerCase();
 
-      const shortLabel = document.createElement("span");
-      shortLabel.className = "tab-short";
-      shortLabel.textContent = tab.shortLabel;
-
-      button.append(label, shortLabel);
+      button.append(icon, label);
       button.addEventListener("click", async () => {
         state.activeTab = tab.id;
         if (state.sideTab === tab.id) state.sideTab = null;
+        if (!state.sideTab) state.sidePanelOpen = false;
         await loadAndRender();
       });
       return button;
@@ -916,12 +838,11 @@ function renderViewActions() {
     .map((tab) => {
       const button = document.createElement("button");
       button.type = "button";
-      button.textContent = tab.shortLabel;
+      button.textContent = tab.label.slice(0, 1);
       button.title = `${tab.label} 함께 보기`;
       button.setAttribute("aria-label", `${tab.label} 함께 보기`);
       button.addEventListener("click", async () => {
-        state.sideTab = tab.id;
-        await loadAndRender();
+        await openSidePanel(tab.id);
       });
       return button;
     });
@@ -933,8 +854,7 @@ function renderViewActions() {
   closeButton.setAttribute("aria-label", "우측 닫기");
   closeButton.hidden = !state.sideTab;
   closeButton.addEventListener("click", async () => {
-    state.sideTab = null;
-    await loadAndRender();
+    await closeSidePanel();
   });
 
   const lockButton = document.createElement("button");
@@ -951,6 +871,53 @@ function renderViewActions() {
 
   actions.replaceChildren(...companionButtons, closeButton);
   lockActions.replaceChildren(lockButton);
+}
+
+async function openSidePanel(tabId) {
+  const isReplacingOpenPanel = state.sideTab && state.sidePanelOpen;
+  state.sideTab = tabId;
+  state.sidePanelOpen = isReplacingOpenPanel;
+  await loadAndRender();
+
+  if (isReplacingOpenPanel) return;
+  requestAnimationFrame(() => {
+    state.sidePanelOpen = true;
+    document.querySelector("#view")?.classList.add("side-panel-open");
+  });
+}
+
+async function closeSidePanel() {
+  if (!state.sideTab) return;
+
+  state.sidePanelOpen = false;
+  const view = document.querySelector("#view");
+  if (!view) {
+    state.sideTab = null;
+    await loadAndRender();
+    return;
+  }
+
+  view.classList.remove("side-panel-open");
+
+  await new Promise((resolve) => {
+    let finished = false;
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      view.removeEventListener("transitionend", handleTransitionEnd);
+      resolve();
+    };
+    const handleTransitionEnd = (event) => {
+      if (event.target === view && event.propertyName === "grid-template-columns") {
+        finish();
+      }
+    };
+    view.addEventListener("transitionend", handleTransitionEnd);
+    window.setTimeout(finish, 240);
+  });
+
+  state.sideTab = null;
+  await loadAndRender();
 }
 
 function renderPeriodNav() {
@@ -1061,6 +1028,7 @@ function createTaskItem(task) {
   const content = document.createElement("span");
   content.className = "task-content";
   content.textContent = task.content;
+  content.title = "클릭해서 수정";
 
   const deleteButton = document.createElement("button");
   deleteButton.className = "delete-button";
@@ -1096,10 +1064,93 @@ function createTaskItem(task) {
         setStatus("상태 저장 실패");
       }
     });
+
+    content.addEventListener("click", (event) => {
+      event.stopPropagation();
+      beginTaskEdit(item, task);
+    });
   }
 
   item.append(handle, bullet, content, deleteButton);
   return item;
+}
+
+function beginTaskEdit(item, task) {
+  if (item.classList.contains("is-editing-task")) return;
+
+  const content = item.querySelector(".task-content");
+  const deleteButton = item.querySelector(".delete-button");
+  if (!content) return;
+
+  const input = document.createElement("textarea");
+  input.className = "task-edit-input";
+  input.rows = 1;
+  input.value = task.content;
+
+  let finished = false;
+  const cancel = () => {
+    if (finished) return;
+    finished = true;
+    input.replaceWith(content);
+    item.classList.remove("is-editing-task");
+    deleteButton?.removeAttribute("disabled");
+  };
+
+  const save = async () => {
+    if (finished) return;
+    const nextContent = input.value.trim();
+    if (!nextContent) {
+      cancel();
+      return;
+    }
+
+    finished = true;
+    if (nextContent === task.content) {
+      input.replaceWith(content);
+      item.classList.remove("is-editing-task");
+      deleteButton?.removeAttribute("disabled");
+      return;
+    }
+
+    if (!state.dbReady) {
+      setStatus("SQLite가 준비되지 않아 저장할 수 없습니다.");
+      finished = false;
+      cancel();
+      return;
+    }
+
+    try {
+      await updateTaskContent(task.id, nextContent);
+      setStatus("수정 완료");
+      await loadAndRender();
+    } catch (error) {
+      console.error(error);
+      setStatus("수정 실패");
+      finished = false;
+    }
+  };
+
+  input.addEventListener("input", () => resizeEntryInput(input));
+  input.addEventListener("blur", save);
+  input.addEventListener("keydown", async (event) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      cancel();
+      return;
+    }
+    if (event.key !== "Enter" || event.shiftKey) return;
+    event.preventDefault();
+    await save();
+  });
+
+  item.classList.add("is-editing-task");
+  deleteButton?.setAttribute("disabled", "");
+  content.replaceWith(input);
+  requestAnimationFrame(() => {
+    resizeEntryInput(input);
+    input.focus();
+    input.select();
+  });
 }
 
 function resizeEntryInput(input) {
@@ -1742,7 +1793,7 @@ function bindSortables() {
       fallbackTolerance: 3,
       ghostClass: "task-ghost",
       chosenClass: "task-chosen",
-      filter: ".entry-row, .entry-row *, .delete-button, .add-task-button",
+      filter: ".entry-row, .entry-row *, .task-edit-input, .delete-button, .add-task-button",
       draggable: ".task-item",
       handle: ".drag-handle",
       onStart(event) {
@@ -1859,7 +1910,8 @@ async function loadAndRender() {
   if (state.sideTab) panels.push(createPanel(state.sideTab, true));
 
   const view = document.querySelector("#view");
-  view.className = state.sideTab ? "split" : "single";
+  view.className = state.sideTab ? "split side-layout" : "single";
+  view.classList.toggle("side-panel-open", state.sidePanelOpen);
   view.replaceChildren(...panels);
 
   await renderDetailModal();
@@ -1965,26 +2017,10 @@ async function requestReview() {
 
 renderShell();
 
-let sidebarToggleAnimating = false;
 document.querySelector("#sidebar-toggle").addEventListener("click", () => {
-  if (sidebarToggleAnimating) return;
-  sidebarToggleAnimating = true;
-
   const shell = document.querySelector(".shell");
-  const tabsNav = document.querySelector(".tabs");
-  const brand = document.querySelector(".brand");
   const collapsed = shell.dataset.sidebarCollapsed === "true";
-  tabsNav.classList.add("tabs-fading");
-  brand.classList.add("sidebar-content-fading");
-
-  window.setTimeout(() => {
-    shell.dataset.sidebarCollapsed = String(!collapsed);
-    window.setTimeout(() => {
-      tabsNav.classList.remove("tabs-fading");
-      brand.classList.remove("sidebar-content-fading");
-      sidebarToggleAnimating = false;
-    }, 40);
-  }, 120);
+  shell.dataset.sidebarCollapsed = String(!collapsed);
 });
 document.querySelector("#settings-button").addEventListener("click", openSettings);
 document.querySelector("#save-api-key").addEventListener("click", saveSettings);

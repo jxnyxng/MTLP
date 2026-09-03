@@ -90,6 +90,14 @@ export async function updateTaskStatus(id, status) {
   ]);
 }
 
+export async function updateTaskContent(id, content) {
+  const database = await initDb();
+  return database.execute("UPDATE tasks SET content = ? WHERE id = ?", [
+    content,
+    id,
+  ]);
+}
+
 export async function deleteTask(id) {
   const database = await initDb();
   return database.execute("DELETE FROM tasks WHERE id = ?", [id]);
@@ -124,7 +132,7 @@ export async function saveThemeId(themeId) {
 }
 
 export async function getThemeId() {
-  return getSetting("theme_id", "productivity-light");
+  return getSetting("theme_id", "sage-graphite-light");
 }
 
 export async function saveTimelineRange(targetDate, range) {
