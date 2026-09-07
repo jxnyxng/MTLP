@@ -1,0 +1,122 @@
+.journal-board {
+  display: grid;
+  min-height: 100%;
+  padding: 12px;
+  overflow: auto;
+}
+
+.journal-pages {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  justify-items: start;
+  align-content: start;
+  align-items: start;
+  gap: 18px;
+  min-height: 0;
+}
+
+.journal-page,
+.journal-add-page {
+  position: relative;
+  width: min(420px, 100%);
+  min-height: 760px;
+  border: 1px solid color-mix(in srgb, var(--color-border), transparent 12%);
+  border-radius: 10px;
+  padding: 54px 46px 44px;
+  background:
+    linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent 30px,
+      color-mix(in srgb, var(--color-border), transparent 68%) 31px
+    ),
+    var(--color-panel);
+  background-size: 100% 31px;
+  box-shadow:
+    0 1px 2px rgb(15 23 42 / 5%),
+    0 18px 48px rgb(15 23 42 / 8%);
+}
+
+.journal-add-page {
+  display: grid;
+  place-items: center;
+  width: min(168px, 100%);
+  min-height: 272px;
+  padding: 0;
+  border-style: dashed;
+  color: var(--color-muted);
+  cursor: pointer;
+  font-size: 42px;
+  line-height: 1;
+  transition:
+    border-color 140ms ease,
+    box-shadow 140ms ease,
+    color 140ms ease;
+}
+
+.journal-add-page:hover {
+  border-color: color-mix(in srgb, var(--color-border), transparent 12%);
+  background:
+    linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--color-surface-muted), transparent 42%) 0 42px,
+      transparent 42px
+    ),
+    linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent 30px,
+      color-mix(in srgb, var(--color-border), transparent 68%) 31px
+    ),
+    color-mix(in srgb, var(--color-surface-muted), var(--color-panel) 52%);
+  color: var(--color-text);
+  box-shadow:
+    0 1px 2px rgb(15 23 42 / 5%),
+    0 18px 48px rgb(15 23 42 / 8%);
+}
+
+.journal-date-mark {
+  position: absolute;
+  top: 18px;
+  left: 22px;
+  color: var(--color-muted);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.journal-delete {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-subtle);
+  font-size: 18px;
+}
+
+.journal-delete:hover {
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+
+.journal-textarea {
+  width: 100%;
+  min-height: 650px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--color-text);
+  outline: 0;
+  resize: none;
+  font-size: 15px;
+  line-height: 31px;
+}
+
+.journal-textarea::placeholder {
+  color: var(--color-subtle);
+}

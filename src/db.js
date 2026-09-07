@@ -40,6 +40,17 @@ export async function initDb() {
     )
   `);
 
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS journal_entries (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      target_date TEXT NOT NULL,
+      content TEXT NOT NULL DEFAULT '',
+      position INTEGER NOT NULL DEFAULT 1000,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
   return db;
 }
 
@@ -98,6 +109,15 @@ export async function updateTaskContent(id, content) {
   ]);
 }
 
+export async function updateTaskBlock(id, content, status) {
+  const database = await initDb();
+  return database.execute("UPDATE tasks SET content = ?, status = ? WHERE id = ?", [
+    content,
+    status,
+    id,
+  ]);
+}
+
 export async function deleteTask(id) {
   const database = await initDb();
   return database.execute("DELETE FROM tasks WHERE id = ?", [id]);
@@ -148,6 +168,41 @@ export async function getTimelineRange(targetDate) {
   } catch {
     return null;
   }
+}
+
+export async function getAllJournalEntries() {
+  const database = await initDb();
+  return database.select(
+    `SELECT *
+       FROM journal_entries
+      ORDER BY position DESC, id DESC`,
+  );
+}
+
+export async function addJournalEntry(targetDate, position = 1000) {
+  const database = await initDb();
+  const result = await database.execute(
+    `INSERT INTO journal_entries (target_date, position)
+     VALUES (?, ?)`,
+    [targetDate, position],
+  );
+
+  return result.lastInsertId;
+}
+
+export async function updateJournalEntry(id, content) {
+  const database = await initDb();
+  return database.execute(
+    `UPDATE journal_entries
+        SET content = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?`,
+    [content, id],
+  );
+}
+
+export async function deleteJournalEntry(id) {
+  const database = await initDb();
+  return database.execute("DELETE FROM journal_entries WHERE id = ?", [id]);
 }
 
 async function saveSetting(key, value) {
