@@ -8,6 +8,7 @@ export function createTaskDragController({
   loadAndRender,
 }) {
   let dragSourceList = null;
+  let pendingDropList = null;
 
   function calculateDropPosition(list, item) {
     const taskItems = Array.from(list.children).filter((child) =>
@@ -41,6 +42,14 @@ export function createTaskDragController({
     };
   }
 
+  function calculateAppendPosition(list) {
+    const positions = Array.from(list.children)
+      .filter((child) => child.classList.contains("task-item"))
+      .map((child) => Number(child.dataset.position) || 0);
+    if (!positions.length) return 1000;
+    return Math.max(...positions) + 1000;
+  }
+
   function clearDropTargets({ resetDrag = false } = {}) {
     document.querySelectorAll(".drop-target, .drop-list-target, .reorder-list-target").forEach((element) => {
       element.classList.remove("drop-target", "drop-list-target", "reorder-list-target");
@@ -48,6 +57,7 @@ export function createTaskDragController({
     if (resetDrag) {
       document.body.classList.remove("is-dragging-task");
       dragSourceList = null;
+      pendingDropList = null;
     }
   }
 
@@ -74,12 +84,11 @@ export function createTaskDragController({
     return pointerY < rect.top + rect.height / 2 ? -1 : 1;
   }
 
-  async function saveDroppedTask(event) {
+  async function saveDroppedTask(event, position = calculateDropPosition(event.to, event.item)) {
     if (!state.dbReady) return;
 
     const fromType = event.from.dataset.periodType;
     const target = dropTargetFor(event.to);
-    const position = calculateDropPosition(event.to, event.item);
 
     try {
       if (event.pullMode === "clone" || (fromType === "WEEKLY" && target.periodType === "DAILY")) {
@@ -145,10 +154,30 @@ export function createTaskDragController({
         },
         onMove(event) {
           markDropTarget(event.to);
+          if (event.to !== dragSourceList) {
+            pendingDropList = event.to;
+            return false;
+          }
+
+          pendingDropList = null;
           return insertionDirection(event);
         },
         async onEnd(event) {
+          const targetList = pendingDropList;
           clearDropTargets({ resetDrag: true });
+          if (targetList && targetList !== event.from) {
+            await saveDroppedTask(
+              {
+                item: event.item,
+                from: event.from,
+                to: targetList,
+                pullMode: event.pullMode,
+              },
+              calculateAppendPosition(targetList),
+            );
+            return;
+          }
+
           if (didDropInOriginalPlace(event)) {
             setStatus("이동 취소");
             return;
