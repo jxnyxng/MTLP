@@ -151,21 +151,25 @@ export function createJournalRenderer({
     const board = document.createElement("div");
     board.className = "journal-board";
 
+    const actions = document.createElement("div");
+    actions.className = "journal-actions";
+
     const addButton = document.createElement("button");
-    addButton.className = "journal-add-page";
+    addButton.className = "journal-add-button";
     addButton.type = "button";
-    addButton.textContent = "+";
+    addButton.textContent = "새 메모";
     addButton.setAttribute("aria-label", "일기장 추가");
     addButton.addEventListener("click", async () => {
       await addJournalPage();
     });
+    actions.append(addButton);
 
     const pages = document.createElement("section");
     pages.className = "journal-pages";
     const entries = data.journalEntries ?? [];
-    pages.append(addButton, ...entries.map(createJournalPage));
+    pages.append(...entries.map(createJournalPage));
 
-    board.append(pages);
+    board.append(actions, pages);
     panel.append(board);
   }
 

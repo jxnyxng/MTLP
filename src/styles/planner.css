@@ -868,7 +868,7 @@ body:not(.is-editing) .task-item:focus-within .bullet {
 }
 
 .drop-list-target > .task-ghost {
-  display: grid;
+  display: none;
 }
 
 .reorder-list-target > .task-ghost {
@@ -899,6 +899,18 @@ body:not(.is-editing) .task-item:focus-within .bullet {
 .is-dragging-task .add-task-row {
   visibility: hidden;
   pointer-events: none;
+}
+
+.is-dragging-task .drop-list-target > .add-task-row {
+  visibility: visible;
+  min-height: 26px;
+  border: 1px dashed color-mix(in srgb, var(--color-primary), transparent 24%);
+  background: color-mix(in srgb, var(--color-secondary-soft), transparent 18%);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-primary), transparent 48%);
+}
+
+.is-dragging-task .drop-list-target > .add-task-row .add-task-button {
+  opacity: 0;
 }
 
 .timeline {
