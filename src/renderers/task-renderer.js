@@ -83,6 +83,10 @@ export function createTaskRenderer({
     }
   
     item.append(handle, bullet, content, deleteButton);
+    if (!state.isLocked && Number(task.id) === state.pendingEditTaskId) {
+      state.pendingEditTaskId = null;
+      requestAnimationFrame(() => beginTaskEdit(item, task));
+    }
     return item;
   }
   

@@ -18,11 +18,11 @@
 .journal-page,
 .journal-add-page {
   position: relative;
-  width: min(420px, 100%);
-  min-height: 760px;
+  width: min(168px, 100%);
+  min-height: 272px;
   border: 1px solid color-mix(in srgb, var(--color-border), transparent 12%);
   border-radius: 10px;
-  padding: 54px 46px 44px;
+  padding: 46px 18px 18px;
   background:
     linear-gradient(
       to bottom,
@@ -37,11 +37,13 @@
     0 18px 48px rgb(15 23 42 / 8%);
 }
 
+.journal-page {
+  cursor: text;
+}
+
 .journal-add-page {
   display: grid;
   place-items: center;
-  width: min(168px, 100%);
-  min-height: 272px;
   padding: 0;
   border-style: dashed;
   color: var(--color-muted);
@@ -77,8 +79,8 @@
 
 .journal-date-mark {
   position: absolute;
-  top: 18px;
-  left: 22px;
+  top: 16px;
+  left: 18px;
   color: var(--color-muted);
   font-size: 12px;
   font-weight: 650;
@@ -86,8 +88,8 @@
 
 .journal-delete {
   position: absolute;
-  top: 14px;
-  right: 14px;
+  top: 10px;
+  right: 10px;
   display: grid;
   place-items: center;
   width: 28px;
@@ -102,6 +104,65 @@
 .journal-delete:hover {
   background: var(--color-danger-soft);
   color: var(--color-danger);
+}
+
+.journal-preview {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  color: color-mix(in srgb, var(--color-text), var(--color-muted) 18%);
+  font-size: 13px;
+  line-height: 31px;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 7;
+}
+
+.journal-preview.is-empty {
+  color: var(--color-subtle);
+}
+
+.journal-editor-modal {
+  width: min(520px, calc(100vw - 24px));
+  max-height: calc(100vh - 24px);
+  border: 0;
+  padding: 0;
+  background: transparent;
+}
+
+.journal-editor-modal::backdrop {
+  background: rgb(15 23 42 / 32%);
+}
+
+.journal-editor-sheet {
+  position: relative;
+  min-height: min(760px, calc(100vh - 24px));
+  border: 1px solid color-mix(in srgb, var(--color-border), transparent 12%);
+  border-radius: 10px;
+  padding: 54px 46px 44px;
+  overflow: auto;
+  background:
+    linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent 30px,
+      color-mix(in srgb, var(--color-border), transparent 68%) 31px
+    ),
+    var(--color-panel);
+  background-size: 100% 31px;
+  box-shadow:
+    0 1px 2px rgb(15 23 42 / 5%),
+    0 18px 48px rgb(15 23 42 / 8%);
+}
+
+.journal-editor-sheet .journal-date-mark {
+  top: 18px;
+  left: 22px;
+}
+
+.journal-editor-sheet .journal-delete {
+  top: 14px;
+  right: 14px;
 }
 
 .journal-textarea {

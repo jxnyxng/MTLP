@@ -860,12 +860,15 @@ body:not(.is-editing) .task-item:focus-within .bullet {
 }
 
 .task-ghost {
-  opacity: 0.35;
-  background: var(--color-primary);
+  min-height: 26px;
+  border: 1px dashed color-mix(in srgb, var(--color-primary), transparent 24%);
+  opacity: 1;
+  background: color-mix(in srgb, var(--color-secondary-soft), transparent 18%);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-primary), transparent 48%);
 }
 
 .drop-list-target > .task-ghost {
-  display: none;
+  display: grid;
 }
 
 .reorder-list-target > .task-ghost {

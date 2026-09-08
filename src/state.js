@@ -23,6 +23,7 @@ export const state = {
   shouldAnimatePeriod: false,
   detailModal: null,
   selectedTaskId: null,
+  pendingEditTaskId: null,
   copiedTaskBlock: null,
   collapsedSections: new Set(),
 };
