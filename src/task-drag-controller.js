@@ -9,6 +9,9 @@ export function createTaskDragController({
 }) {
   let dragSourceList = null;
   let pendingDropList = null;
+  let dragPointerListener = null;
+
+  const DROP_PROXIMITY = 18;
 
   function calculateDropPosition(list, item) {
     const taskItems = Array.from(list.children).filter((child) =>
@@ -58,6 +61,10 @@ export function createTaskDragController({
       document.body.classList.remove("is-dragging-task");
       dragSourceList = null;
       pendingDropList = null;
+      if (dragPointerListener) {
+        document.removeEventListener("pointermove", dragPointerListener);
+        dragPointerListener = null;
+      }
     }
   }
 
@@ -71,6 +78,54 @@ export function createTaskDragController({
         ".hour-row, .year-card, .month-card, .day-card, .week-day-card, .period-staging-card",
       ) ?? list;
     if (target) target.classList.add("drop-target");
+  }
+
+  function taskListNearPointer(clientX, clientY) {
+    if (typeof clientX !== "number" || typeof clientY !== "number") return null;
+
+    const directTarget = document.elementFromPoint(clientX, clientY);
+    const directList = directTarget?.closest(".task-list");
+    if (directList) return directList;
+
+    const directContainer = directTarget?.closest(
+      ".hour-row, .year-card, .month-card, .day-card, .week-day-card, .period-staging-card",
+    );
+    const containerList = directContainer?.querySelector(".task-list");
+    if (containerList) return containerList;
+
+    let nearest = null;
+    let nearestDistance = Number.POSITIVE_INFINITY;
+
+    document.querySelectorAll(".task-list").forEach((list) => {
+      const rect = list.getBoundingClientRect();
+      const outsideX =
+        clientX < rect.left
+          ? rect.left - clientX
+          : clientX > rect.right
+            ? clientX - rect.right
+            : 0;
+      const outsideY =
+        clientY < rect.top
+          ? rect.top - clientY
+          : clientY > rect.bottom
+            ? clientY - rect.bottom
+            : 0;
+      const distance = Math.hypot(outsideX, outsideY);
+      if (distance <= DROP_PROXIMITY && distance < nearestDistance) {
+        nearest = list;
+        nearestDistance = distance;
+      }
+    });
+
+    return nearest;
+  }
+
+  function updatePendingDropFromPointer(pointerEvent) {
+    const list = taskListNearPointer(pointerEvent?.clientX, pointerEvent?.clientY);
+    if (!list) return;
+
+    markDropTarget(list);
+    pendingDropList = list === dragSourceList ? null : list;
   }
 
   function insertionDirection(event) {
@@ -149,13 +204,23 @@ export function createTaskDragController({
         handle: ".drag-handle",
         onStart(event) {
           dragSourceList = event.from;
+          const rect = event.item.getBoundingClientRect();
+          event.item.style.setProperty("--drag-width", `${rect.width}px`);
+          event.item.style.setProperty("--drag-height", `${rect.height}px`);
           document.body.classList.add("is-dragging-task");
+          dragPointerListener = updatePendingDropFromPointer;
+          document.addEventListener("pointermove", dragPointerListener);
           setStatus("드롭할 칸을 선택하세요");
         },
         onMove(event) {
-          markDropTarget(event.to);
+          const pointerTarget = taskListNearPointer(
+            event.originalEvent?.clientX,
+            event.originalEvent?.clientY,
+          );
+          const targetList = pointerTarget ?? event.to;
+          markDropTarget(targetList);
           if (event.to !== dragSourceList) {
-            pendingDropList = event.to;
+            pendingDropList = targetList;
             return false;
           }
 
@@ -163,8 +228,15 @@ export function createTaskDragController({
           return insertionDirection(event);
         },
         async onEnd(event) {
+          event.item.style.removeProperty("--drag-width");
+          event.item.style.removeProperty("--drag-height");
           const targetList = pendingDropList;
           clearDropTargets({ resetDrag: true });
+          if (didDropInOriginalPlace(event)) {
+            setStatus("이동 취소");
+            return;
+          }
+
           if (targetList && targetList !== event.from) {
             await saveDroppedTask(
               {
@@ -178,8 +250,8 @@ export function createTaskDragController({
             return;
           }
 
-          if (didDropInOriginalPlace(event)) {
-            setStatus("이동 취소");
+          if (event.from !== event.to) {
+            await loadAndRender();
             return;
           }
 

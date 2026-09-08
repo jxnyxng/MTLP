@@ -550,7 +550,8 @@
 
 .week-day-strip {
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-auto-rows: minmax(0, 1fr);
   gap: 6px;
   overflow-x: hidden;
 }
@@ -582,7 +583,7 @@
   align-items: center;
   gap: 5px;
   min-height: 26px;
-  border-radius: 6px;
+  border-radius: var(--task-block-radius);
   padding: 2px 3px;
 }
 
@@ -605,11 +606,12 @@
 }
 
 .task-item {
-  background: color-mix(in srgb, var(--color-surface), var(--color-panel) 34%);
+  background: transparent;
 }
 
 .task-item:hover {
-  background: var(--color-surface-muted);
+  background: transparent;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-border), transparent 18%);
 }
 
 .task-item.is-block-selected {
@@ -731,7 +733,7 @@
   min-height: 24px;
   max-height: 132px;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--task-block-radius);
   padding: 3px 4px;
   background: transparent;
   color: var(--color-text);
@@ -761,7 +763,7 @@
   width: 20px;
   height: 20px;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--task-block-radius);
   opacity: 0;
   background: transparent;
   color: var(--color-danger);
@@ -806,7 +808,7 @@ body:not(.is-editing) .task-item:focus-within .bullet {
   height: 100%;
   min-height: 26px;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--task-block-radius);
   padding: 0;
   background: transparent;
   color: var(--color-muted);
@@ -838,7 +840,7 @@ body:not(.is-editing) .task-item:focus-within .bullet {
   min-height: 26px;
   max-height: 132px;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--task-block-radius);
   padding: 3px 4px;
   background: transparent;
   color: var(--color-text);
@@ -861,7 +863,9 @@ body:not(.is-editing) .task-item:focus-within .bullet {
 
 .task-ghost {
   min-height: 26px;
+  height: var(--drag-height, auto);
   border: 1px dashed color-mix(in srgb, var(--color-primary), transparent 24%);
+  border-radius: var(--task-block-radius);
   opacity: 1;
   background: color-mix(in srgb, var(--color-secondary-soft), transparent 18%);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-primary), transparent 48%);
@@ -876,19 +880,24 @@ body:not(.is-editing) .task-item:focus-within .bullet {
   min-height: 26px;
   height: auto;
   padding: 2px 3px;
-  border-radius: 6px;
+  border-radius: var(--task-block-radius);
   opacity: 0.18;
   background: var(--color-primary);
 }
 
 .task-chosen {
-  background: var(--color-primary-soft);
+  background: color-mix(in srgb, var(--color-primary-soft), transparent 26%);
 }
 
 .task-dragging {
+  box-sizing: border-box;
+  width: var(--drag-width, auto) !important;
+  min-height: var(--drag-height, 26px);
   border: 1px solid var(--color-primary);
-  background: var(--color-surface);
+  border-radius: var(--task-block-radius);
+  background: color-mix(in srgb, var(--color-panel), transparent 8%);
   box-shadow: 0 8px 20px rgb(0 0 0 / 14%);
+  pointer-events: none;
 }
 
 .drop-target {
@@ -1019,4 +1028,35 @@ body:not(.is-editing) .task-item:focus-within .bullet {
   background: var(--color-surface-muted);
   color: var(--color-text);
   outline: 0;
+}
+
+.task-item,
+.task-item:hover,
+.task-item:focus-within,
+.task-item.is-block-selected,
+.task-item.is-editing-task,
+.task-chosen,
+.task-dragging,
+.task-ghost,
+.entry-row,
+.entry-row:focus-within,
+.add-task-row,
+.add-task-row:hover,
+.add-task-row:focus-within,
+.empty-read-row,
+.task-edit-input,
+.entry-row textarea,
+.add-task-button,
+.delete-button,
+.year-card,
+.month-card,
+.day-card,
+.week-day-card,
+.period-staging-card,
+.period-staging-card > h3,
+.period-staging-card.is-collapsed > h3,
+.staging-toggle,
+.hour-row,
+.hour-row strong {
+  border-radius: var(--task-block-radius) !important;
 }
