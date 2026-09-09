@@ -190,15 +190,120 @@
   transition: min-height 160ms cubic-bezier(0.2, 0, 0, 1);
 }
 
-.period-staging-card.is-collapsed {
+.period-overview {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  min-height: 0;
+  padding: 6px;
+  background: color-mix(in srgb, var(--color-surface-muted), var(--color-panel) 42%);
+}
+
+.period-overview-card {
+  background: color-mix(in srgb, var(--color-primary-soft), var(--color-panel) 68%);
+}
+
+.period-overview-card > h3 {
+  border-bottom: 0;
+}
+
+.period-overview .split-task-stack {
+  max-height: 118px;
   min-height: 0;
 }
 
-.future-goals.period-staging-card.is-collapsed,
-.yearly-goals.period-staging-card.is-collapsed,
-.monthly-goals.period-staging-card.is-collapsed,
-.weekly-goals.period-staging-card.is-collapsed,
-.today-goals.period-staging-card.is-collapsed {
+.period-overview .split-task-stack::before {
+  display: none;
+}
+
+.period-overview .split-task-list {
+  max-height: 118px;
+  min-height: 0;
+  overflow: auto;
+  scrollbar-width: none;
+}
+
+.period-overview .split-task-list::-webkit-scrollbar {
+  display: none;
+}
+
+.period-summary-card {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: transparent;
+}
+
+.period-summary-card + .period-summary-card {
+  border-left: 1px solid color-mix(in srgb, var(--color-border), transparent 18%);
+}
+
+.period-summary-card > h3 {
+  min-height: 28px;
+  margin: 0;
+  border-bottom: 0;
+  padding: 5px 8px 4px;
+  background: transparent;
+  color: var(--color-text);
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.2;
+}
+
+.period-journal-list {
+  display: grid;
+  align-content: start;
+  gap: 1px;
+  max-height: 118px;
+  min-height: 0;
+  padding: 5px;
+  overflow: auto;
+  scrollbar-width: none;
+}
+
+.period-journal-list::-webkit-scrollbar {
+  display: none;
+}
+
+.period-journal-item {
+  display: grid;
+  align-items: center;
+  min-height: 26px;
+  border: 0;
+  border-radius: var(--task-block-radius);
+  padding: 3px 5px;
+  background: transparent;
+  color: var(--color-text);
+  text-align: left;
+}
+
+.period-journal-item:hover,
+.period-journal-item:focus-visible {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  outline: 0;
+}
+
+.period-journal-item strong {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.period-journal-empty {
+  margin: 0;
+  padding: 5px;
+  color: var(--color-subtle);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.period-staging-card.is-collapsed {
   min-height: 0;
 }
 
@@ -215,18 +320,16 @@
   height: 0;
   min-height: 0;
   opacity: 0;
+  visibility: hidden;
+}
+
+.period-staging-card.is-collapsed > .period-overview {
+  padding-top: 0;
+  padding-bottom: 0;
 }
 
 .period-staging-card.is-collapsed > h3 {
   border-bottom: 0;
-}
-
-.future-goals,
-.yearly-goals,
-.monthly-goals,
-.weekly-goals,
-.today-goals {
-  min-height: 0;
 }
 
 .period-staging-card > h3 {
@@ -235,33 +338,6 @@
   overflow: hidden;
   padding: 0;
   border-radius: 8px 8px 0 0;
-}
-
-.future-goals h3,
-.yearly-goals h3,
-.monthly-goals h3,
-.weekly-goals h3,
-.today-goals h3 {
-  min-height: 28px;
-  line-height: 1.2;
-}
-
-.future-goals h3,
-.yearly-goals h3,
-.monthly-goals h3,
-.weekly-goals h3,
-.today-goals h3 {
-  align-items: stretch;
-}
-
-.future-goals h3 > span,
-.yearly-goals h3 > span,
-.monthly-goals h3 > span,
-.weekly-goals h3 > span,
-.today-goals h3 > span {
-  display: flex;
-  align-items: center;
-  min-height: 22px;
 }
 
 .staging-toggle {
@@ -348,6 +424,10 @@
   gap: 0;
   overflow: hidden;
   padding: 0;
+}
+
+.period-overview-card > h3 {
+  border-bottom: 0;
 }
 
 .year-card h3:has(.heading-link),
@@ -578,6 +658,7 @@
 .entry-row,
 .add-task-row,
 .empty-read-row {
+  box-sizing: border-box;
   display: grid;
   grid-template-columns: 18px minmax(0, 1fr) 22px;
   align-items: center;
@@ -607,6 +688,7 @@
 
 .task-item {
   background: transparent;
+  cursor: pointer;
 }
 
 .task-item:hover {
@@ -715,6 +797,7 @@
 .task-content {
   min-width: 0;
   color: color-mix(in srgb, var(--color-text), var(--color-muted) 12%);
+  cursor: pointer;
   font-size: 13px;
   font-weight: 520;
   line-height: 1.35;
@@ -737,6 +820,7 @@
   padding: 3px 4px;
   background: transparent;
   color: var(--color-text);
+  cursor: text;
   outline: none;
   resize: none;
   overflow: hidden;
@@ -862,6 +946,7 @@ body:not(.is-editing) .task-item:focus-within .bullet {
 }
 
 .task-ghost {
+  box-sizing: border-box;
   min-height: 26px;
   height: var(--drag-height, auto);
   border: 1px dashed color-mix(in srgb, var(--color-primary), transparent 24%);
@@ -913,8 +998,9 @@ body:not(.is-editing) .task-item:focus-within .bullet {
 .is-dragging-task .drop-list-target > .add-task-row {
   visibility: visible;
   min-height: 26px;
-  border: 1px dashed color-mix(in srgb, var(--color-primary), transparent 24%);
   background: color-mix(in srgb, var(--color-secondary-soft), transparent 18%);
+  outline: 1px dashed color-mix(in srgb, var(--color-primary), transparent 24%);
+  outline-offset: -1px;
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-primary), transparent 48%);
 }
 

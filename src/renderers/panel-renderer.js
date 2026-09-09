@@ -1,7 +1,10 @@
+import { createPeriodOverviewRenderer } from "./period-overview-renderer.js";
+
 export function createPanelRenderer({
   state,
   timelineHourOptions,
   renderJournalPanel,
+  openJournalEditor,
   createSplitTaskStack,
   createTaskStack,
   renderTaskList,
@@ -75,7 +78,7 @@ export function createPanelRenderer({
     toggle.setAttribute("aria-expanded", String(!isCollapsed));
     toggle.innerHTML = `<span aria-hidden="true">›</span><strong>${label}</strong>`;
     toggle.addEventListener("click", () => {
-      const content = card.querySelector(".split-task-stack");
+      const content = card.querySelector(".staging-content, .split-task-stack");
       const nextCollapsed = !card.classList.contains("is-collapsed");
       toggle.setAttribute("aria-expanded", String(!nextCollapsed));
   
@@ -83,8 +86,8 @@ export function createPanelRenderer({
         if (nextCollapsed) {
           content.style.height = `${content.scrollHeight}px`;
           content.getBoundingClientRect();
+          card.classList.add("is-collapsed");
           requestAnimationFrame(() => {
-            card.classList.add("is-collapsed");
             content.style.minHeight = "0px";
             content.style.height = "0px";
           });
@@ -97,15 +100,13 @@ export function createPanelRenderer({
             content.style.minHeight = "";
           };
 
+          card.classList.remove("is-collapsed");
+          content.style.height = "auto";
+          content.style.minHeight = "";
+          const expandedHeight = content.getBoundingClientRect().height;
           content.style.minHeight = "0px";
           content.style.height = "0px";
-          card.classList.remove("is-collapsed");
-          content.style.minHeight = "";
-          const expandedHeight = Math.max(
-            content.scrollHeight,
-            Number.parseFloat(getComputedStyle(content).minHeight) || 0,
-          );
-          content.style.minHeight = "0px";
+          content.getBoundingClientRect();
           content.addEventListener("transitionend", clearExpandedHeight);
           requestAnimationFrame(() => {
             content.style.height = `${expandedHeight}px`;
@@ -125,29 +126,29 @@ export function createPanelRenderer({
     if (extra) heading.append(extra);
     return heading;
   }
+
+  const { createPeriodOverview, createTodoSummary } = createPeriodOverviewRenderer({
+    state,
+    createStagingHeading,
+    createSplitTaskStack,
+    openJournalEditor,
+    targetFor,
+    futureYears,
+    weekDates,
+    toDateKey,
+  });
   
   function renderFuturePanel(panel, data = state, anchorDate = state.anchorDate) {
     const board = document.createElement("div");
     board.className = "future-board";
     const now = new Date();
   
-    const decadeGoals = document.createElement("section");
-    decadeGoals.className = "period-staging-card future-goals";
     const decadeTarget = targetFor("FUTURE", anchorDate);
-    const decadeGoalsTitle = createStagingHeading(
-      decadeGoals,
+    const decadeGoals = createTodoSummary(
       "FUTURE",
+      data.tasks.FUTURE,
+      "Decade task",
       decadeTarget,
-      "This Decade",
-    );
-    decadeGoals.append(
-      decadeGoalsTitle,
-      createSplitTaskStack(
-        "FUTURE",
-        data.tasks.FUTURE,
-        "Decade task",
-        decadeTarget,
-      ),
     );
   
     const grid = document.createElement("div");
@@ -186,7 +187,10 @@ export function createPanelRenderer({
       grid.append(card);
     }
   
-    board.append(decadeGoals, grid);
+    board.append(
+      createPeriodOverview("This Decade", "FUTURE", decadeTarget, decadeGoals, anchorDate, data),
+      grid,
+    );
     panel.append(board);
   }
   
@@ -195,23 +199,12 @@ export function createPanelRenderer({
     board.className = "yearly-board";
     const now = new Date();
   
-    const yearGoals = document.createElement("section");
-    yearGoals.className = "period-staging-card yearly-goals";
     const yearTarget = targetFor("YEARLY", anchorDate);
-    const yearGoalsTitle = createStagingHeading(
-      yearGoals,
+    const yearGoals = createTodoSummary(
       "YEARLY",
+      data.tasks.YEARLY,
+      "Yearly task",
       yearTarget,
-      "This Year",
-    );
-    yearGoals.append(
-      yearGoalsTitle,
-      createSplitTaskStack(
-        "YEARLY",
-        data.tasks.YEARLY,
-        "Yearly task",
-        yearTarget,
-      ),
     );
   
     const grid = document.createElement("div");
@@ -251,7 +244,10 @@ export function createPanelRenderer({
       grid.append(card);
     }
   
-    board.append(yearGoals, grid);
+    board.append(
+      createPeriodOverview("This Year", "YEARLY", yearTarget, yearGoals, anchorDate, data),
+      grid,
+    );
     panel.append(board);
   }
   
@@ -260,23 +256,12 @@ export function createPanelRenderer({
     board.className = "monthly-board";
     const now = new Date();
   
-    const monthGoals = document.createElement("section");
-    monthGoals.className = "period-staging-card monthly-goals";
     const monthTargetDate = targetFor("MONTHLY", anchorDate);
-    const monthGoalsTitle = createStagingHeading(
-      monthGoals,
+    const monthGoals = createTodoSummary(
       "MONTHLY",
+      data.tasks.MONTHLY,
+      "Monthly task",
       monthTargetDate,
-      "This Month",
-    );
-    monthGoals.append(
-      monthGoalsTitle,
-      createSplitTaskStack(
-        "MONTHLY",
-        data.tasks.MONTHLY,
-        "Monthly task",
-        monthTargetDate,
-      ),
     );
   
     const weekList = document.createElement("div");
@@ -355,7 +340,10 @@ export function createPanelRenderer({
       weekList.append(section);
     });
   
-    board.append(monthGoals, weekList);
+    board.append(
+      createPeriodOverview("This Month", "MONTHLY", monthTargetDate, monthGoals, anchorDate, data),
+      weekList,
+    );
     panel.append(board);
   }
   
@@ -401,25 +389,22 @@ export function createPanelRenderer({
     };
   
     const dates = weekDates(anchorDate);
-    const goals = document.createElement("section");
-    goals.className = "period-staging-card weekly-goals";
     const weekTarget = targetFor("WEEKLY", anchorDate);
-    const goalsTitle = createStagingHeading(goals, "WEEKLY", weekTarget, "This Week");
-    goals.append(
-      goalsTitle,
-      createSplitTaskStack(
-        "WEEKLY",
-        data.tasks.WEEKLY,
-        "Weekly task",
-        weekTarget,
-      ),
+    const goals = createTodoSummary(
+      "WEEKLY",
+      data.tasks.WEEKLY,
+      "Weekly task",
+      weekTarget,
     );
   
     const days = document.createElement("div");
     days.className = "week-day-strip";
     dates.forEach((date) => days.append(createWeekDayCard(date)));
   
-    wrap.append(goals, days);
+    wrap.append(
+      createPeriodOverview("This Week", "WEEKLY", weekTarget, goals, anchorDate, data),
+      days,
+    );
     panel.append(wrap);
   }
   
@@ -499,23 +484,12 @@ export function createPanelRenderer({
     const now = new Date();
     const isToday = isCurrentDate(anchorDate, now);
   
-    const today = document.createElement("section");
-    today.className = "period-staging-card today-goals";
     const dayTarget = targetFor("DAILY", anchorDate);
-    const todayTitle = createStagingHeading(
-      today,
+    const today = createTodoSummary(
       "DAILY",
+      data.tasks.DAILY.filter((task) => !task.time_block),
+      "Daily task",
       dayTarget,
-      "This Day",
-    );
-    today.append(
-      todayTitle,
-      createSplitTaskStack(
-        "DAILY",
-        data.tasks.DAILY.filter((task) => !task.time_block),
-        "Daily task",
-        dayTarget,
-      ),
     );
   
     const timeline = document.createElement("div");
@@ -570,7 +544,10 @@ export function createPanelRenderer({
     hourColumns.append(leftColumn, rightColumn);
     timeline.append(hourColumns);
   
-    board.append(today, timeline);
+    board.append(
+      createPeriodOverview("This Day", "DAILY", dayTarget, today, anchorDate, data),
+      timeline,
+    );
     panel.append(board);
   }
   

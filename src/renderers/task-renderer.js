@@ -80,6 +80,11 @@ export function createTaskRenderer({
         event.stopPropagation();
         beginTaskEdit(item, task);
       });
+
+      item.addEventListener("click", (event) => {
+        if (event.target.closest("button, textarea")) return;
+        beginTaskEdit(item, task);
+      });
     }
   
     item.append(handle, bullet, content, deleteButton);
@@ -235,7 +240,7 @@ export function createTaskRenderer({
   function renderTaskList(list, periodType, tasks, placeholder) {
     const taskItems = tasks.map(createTaskItem);
     if (state.isLocked) {
-      list.replaceChildren(...taskItems, createEmptyReadItem());
+      list.replaceChildren(...taskItems, ...(taskItems.length ? [] : [createEmptyReadItem()]));
       return;
     }
   

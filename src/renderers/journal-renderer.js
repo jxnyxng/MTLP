@@ -1,3 +1,5 @@
+import { composeJournalContent, splitJournalContent } from "../journal-utils.js";
+
 export function createJournalRenderer({
   state,
   addJournalEntry,
@@ -23,11 +25,18 @@ export function createJournalRenderer({
     mark.className = "journal-date-mark";
     mark.textContent = entry.target_date;
 
+    const { title, body } = splitJournalContent(entry.content ?? "");
+
+    const previewTitle = document.createElement("h3");
+    previewTitle.className = "journal-preview-title";
+    const previewContent = `${title}\n${body}`.trim();
+    if (!title.trim()) previewTitle.classList.add("is-empty");
+    previewTitle.textContent = title.trim() || "제목";
+
     const preview = document.createElement("p");
     preview.className = "journal-preview";
-    const previewContent = entry.content?.trim();
     if (!previewContent) preview.classList.add("is-empty");
-    preview.textContent = previewContent || "오늘의 생각을 적어보세요.";
+    preview.textContent = body.trim() || (previewContent ? "" : "오늘의 생각을 적어보세요.");
 
     const deleteButton = document.createElement("button");
     deleteButton.className = "journal-delete";
@@ -53,7 +62,7 @@ export function createJournalRenderer({
       event.preventDefault();
       openJournalEditor(entry);
     });
-    page.append(mark, deleteButton, preview);
+    page.append(mark, deleteButton, previewTitle, preview);
     return page;
   }
 
@@ -88,17 +97,33 @@ export function createJournalRenderer({
     closeButton.textContent = "×";
     closeButton.setAttribute("aria-label", "일기 닫기");
 
-    const textarea = document.createElement("textarea");
-    textarea.className = "journal-textarea";
-    textarea.value = entry.content ?? "";
-    textarea.placeholder = "오늘의 생각을 적어보세요.";
+    const fields = document.createElement("div");
+    fields.className = "journal-editor-fields";
 
-    let savedContent = textarea.value;
+    const { title, body } = splitJournalContent(entry.content ?? "");
+
+    const titleInput = document.createElement("input");
+    titleInput.className = "journal-title-input";
+    titleInput.type = "text";
+    titleInput.value = title;
+    titleInput.placeholder = "제목";
+    titleInput.setAttribute("aria-label", "메모 제목");
+
+    const textarea = document.createElement("textarea");
+    textarea.className = "journal-body-textarea";
+    textarea.value = body;
+    textarea.placeholder = "본문";
+    textarea.setAttribute("aria-label", "메모 본문");
+
+    fields.append(titleInput, textarea);
+
+    let savedContent = entry.content ?? "";
     const save = async () => {
-      if (!state.dbReady || textarea.value === savedContent) return;
+      const nextContent = composeJournalContent(titleInput.value, textarea.value);
+      if (!state.dbReady || nextContent === savedContent) return;
       try {
-        await updateJournalEntry(entry.id, textarea.value);
-        savedContent = textarea.value;
+        await updateJournalEntry(entry.id, nextContent);
+        savedContent = nextContent;
         setStatus("일기 저장 완료");
         await loadAndRender();
       } catch (error) {
@@ -108,6 +133,12 @@ export function createJournalRenderer({
     };
 
     textarea.addEventListener("input", () => resizeJournalInput(textarea));
+    titleInput.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" || event.isComposing) return;
+      event.preventDefault();
+      textarea.focus();
+      textarea.setSelectionRange(0, 0);
+    });
     textarea.addEventListener("blur", save);
     const saveOnCancel = () => {
       void save();
@@ -120,12 +151,13 @@ export function createJournalRenderer({
     });
     dialog.addEventListener("cancel", saveOnCancel, { once: true });
 
-    sheet.append(mark, closeButton, textarea);
+    sheet.append(mark, closeButton, fields);
     dialog.replaceChildren(sheet);
     dialog.showModal();
     requestAnimationFrame(() => {
       resizeJournalInput(textarea);
-      textarea.focus();
+      titleInput.focus();
+      titleInput.select();
     });
   }
 
@@ -151,29 +183,26 @@ export function createJournalRenderer({
     const board = document.createElement("div");
     board.className = "journal-board";
 
-    const actions = document.createElement("div");
-    actions.className = "journal-actions";
-
     const addButton = document.createElement("button");
     addButton.className = "journal-add-button";
     addButton.type = "button";
-    addButton.textContent = "새 메모";
-    addButton.setAttribute("aria-label", "일기장 추가");
+    addButton.textContent = "작성하기";
+    addButton.setAttribute("aria-label", "메모 작성하기");
     addButton.addEventListener("click", async () => {
       await addJournalPage();
     });
-    actions.append(addButton);
 
     const pages = document.createElement("section");
     pages.className = "journal-pages";
     const entries = data.journalEntries ?? [];
     pages.append(...entries.map(createJournalPage));
 
-    board.append(actions, pages);
+    board.append(addButton, pages);
     panel.append(board);
   }
 
   return {
+    openJournalEditor,
     renderJournalPanel,
   };
 }

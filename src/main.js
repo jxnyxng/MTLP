@@ -49,6 +49,7 @@ import {
 const app = document.querySelector("#app");
 let renderVersion = 0;
 let renderJournalPanel;
+let openJournalEditor;
 let renderThemeOptions;
 let closeDetailModal;
 let createPanel;
@@ -467,6 +468,10 @@ async function openSettings() {
   apiKeySetting.open = false;
   renderThemeOptions();
   modal.showModal();
+  requestAnimationFrame(() => {
+    modal.tabIndex = -1;
+    modal.focus({ preventScroll: true });
+  });
 }
 
 async function saveSettings() {
@@ -480,7 +485,7 @@ async function saveSettings() {
   }
 }
 
-({ renderJournalPanel } = createJournalRenderer({
+({ openJournalEditor, renderJournalPanel } = createJournalRenderer({
   state,
   addJournalEntry,
   deleteJournalEntry,
@@ -541,6 +546,7 @@ async function saveSettings() {
   state,
   timelineHourOptions,
   renderJournalPanel,
+  openJournalEditor,
   createSplitTaskStack,
   createTaskStack,
   renderTaskList,

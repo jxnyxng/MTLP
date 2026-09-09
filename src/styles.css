@@ -64,7 +64,8 @@ textarea:focus-visible {
 }
 
 .task-edit-input:focus-visible,
-.journal-textarea:focus-visible {
+.journal-title-input:focus-visible,
+.journal-body-textarea:focus-visible {
   outline: 0;
 }
 
@@ -164,6 +165,8 @@ button {
 .modal-close:focus,
 .modal-close:focus-visible {
   border-color: transparent;
+  background: transparent;
+  color: inherit;
   outline: 0;
 }
 
@@ -485,7 +488,7 @@ button {
   min-height: 54px;
   margin-bottom: 8px;
   border: 1px solid color-mix(in srgb, var(--color-border), transparent 24%);
-  border-radius: 14px;
+  border-radius: var(--task-block-radius);
   padding: 8px 10px 8px 12px;
   background: color-mix(in srgb, var(--color-panel), var(--color-bg) 18%);
   box-shadow:
@@ -583,8 +586,23 @@ button {
 }
 
 .lock-actions button {
-  min-height: 24px;
-  padding: 3px 8px;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  min-width: 28px;
+  min-height: 28px;
+  padding: 0;
+  font-size: 14px;
+}
+
+.lock-mode-button svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .lock-mode-button[aria-pressed="true"] {

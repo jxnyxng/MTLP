@@ -196,17 +196,27 @@ export function createShellRenderer({
     const lockButton = document.createElement("button");
     lockButton.type = "button";
     lockButton.className = "lock-mode-button";
-    lockButton.textContent = state.isLocked ? "잠금 해제" : "잠금";
     lockButton.title = state.isLocked ? "입력 잠금 해제" : "보기 전용으로 잠금";
     lockButton.setAttribute("aria-label", state.isLocked ? "입력 잠금 해제" : "보기 전용으로 잠금");
     lockButton.setAttribute("aria-pressed", String(state.isLocked));
+    lockButton.innerHTML = state.isLocked
+      ? `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M7.5 10.5H18a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2h1.5Z" />
+          <path d="M8.5 10.5V8.2A3.7 3.7 0 0 1 12.2 4.5a3.7 3.7 0 0 1 3.7 3.7" />
+          <path d="M12 14.4v2.2" />
+        </svg>`
+      : `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <rect x="4" y="10.5" width="16" height="10" rx="2" />
+          <path d="M8 10.5V8.2A4 4 0 0 1 12 4.2a4 4 0 0 1 4 4v2.3" />
+          <path d="M12 14.4v2.2" />
+        </svg>`;
     lockButton.addEventListener("click", async () => {
       state.isLocked = !state.isLocked;
       await loadAndRender();
     });
 
     actions.replaceChildren(...actionItems);
-    lockActions.replaceChildren(lockButton);
+    lockActions.replaceChildren(...(state.activeTab === "JOURNAL" ? [] : [lockButton]));
   }
 
   function renderPeriodNav() {
