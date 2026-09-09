@@ -26,12 +26,14 @@ export async function initDb() {
       target_date TEXT NOT NULL,
       time_block TEXT DEFAULT NULL,
       position INTEGER NOT NULL DEFAULT 1000,
+      split_lane INTEGER DEFAULT NULL,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
 
   await ensureColumn(db, "tasks", "time_block", "time_block TEXT DEFAULT NULL");
   await ensureColumn(db, "tasks", "position", "position INTEGER NOT NULL DEFAULT 1000");
+  await ensureColumn(db, "tasks", "split_lane", "split_lane INTEGER DEFAULT NULL");
 
   await db.execute(`
     CREATE TABLE IF NOT EXISTS settings (
@@ -82,12 +84,13 @@ export async function addTask(
   targetDate,
   position = 1000,
   timeBlock = null,
+  splitLane = null,
 ) {
   const database = await initDb();
   const result = await database.execute(
-    `INSERT INTO tasks (content, period_type, target_date, position, time_block)
-     VALUES (?, ?, ?, ?, ?)`,
-    [content, periodType, targetDate, position, timeBlock],
+    `INSERT INTO tasks (content, period_type, target_date, position, time_block, split_lane)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+    [content, periodType, targetDate, position, timeBlock, splitLane],
   );
 
   return result.lastInsertId;
@@ -129,13 +132,14 @@ export async function moveTask(
   targetDate,
   position,
   timeBlock = null,
+  splitLane = null,
 ) {
   const database = await initDb();
   return database.execute(
     `UPDATE tasks
-        SET period_type = ?, target_date = ?, position = ?, time_block = ?
+        SET period_type = ?, target_date = ?, position = ?, time_block = ?, split_lane = ?
       WHERE id = ?`,
-    [periodType, targetDate, position, timeBlock, id],
+    [periodType, targetDate, position, timeBlock, splitLane, id],
   );
 }
 

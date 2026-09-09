@@ -71,7 +71,11 @@ export function createPeriodOverviewRenderer({
           const title = document.createElement("strong");
           title.textContent = journalTitle(entry);
 
-          button.append(title);
+          const date = document.createElement("span");
+          date.className = "period-journal-date";
+          date.textContent = entry.target_date;
+
+          button.append(title, date);
           return button;
         }),
       );

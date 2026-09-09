@@ -19,6 +19,9 @@ export function createTaskRenderer({
     item.dataset.content = task.content;
     item.dataset.status = task.status;
     item.dataset.periodType = task.period_type;
+    if (task.split_lane !== null && task.split_lane !== undefined) {
+      item.dataset.splitLane = task.split_lane;
+    }
     if (Number(task.id) === state.selectedTaskId) item.classList.add("is-block-selected");
   
     const handle = document.createElement("button");
@@ -260,16 +263,27 @@ export function createTaskRenderer({
   function createSplitTaskStack(periodType, tasks, placeholder, targetDate) {
     const stack = document.createElement("div");
     stack.className = "split-task-stack";
+
+    const fallbackLaneById = new Map(
+      tasks
+        .filter((task) => task.split_lane === null || task.split_lane === undefined)
+        .map((task, index) => [Number(task.id), index % 2]),
+    );
   
     const lists = [0, 1].map((lane) => {
       const list = document.createElement("ul");
       list.className = "task-list split-task-list";
       list.dataset.periodType = periodType;
       list.dataset.targetDate = targetDate;
+      list.dataset.splitLane = String(lane);
       renderTaskList(
         list,
         periodType,
-        tasks.filter((_, index) => index % 2 === lane),
+        tasks.filter((task) => {
+          const savedLane = Number(task.split_lane);
+          if (savedLane === 0 || savedLane === 1) return savedLane === lane;
+          return fallbackLaneById.get(Number(task.id)) === lane;
+        }),
         placeholder,
       );
       return list;

@@ -30,7 +30,7 @@ export function createShellRenderer({
           </div>
           <nav class="tabs" aria-label="Planner views"></nav>
           <div class="sidebar-actions">
-            <button id="review-button" type="button" aria-label="AI 회고 요약">
+            <button id="review-button" class="dismness-action" type="button" aria-label="AI 회고 요약">
               <span class="sidebar-action-icon review-action-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" focusable="false">
                   <defs>
@@ -51,7 +51,7 @@ export function createShellRenderer({
                   <path clip-path="url(#gemini-tip-cut)" filter="url(#gemini-round)" stroke="currentColor" stroke-width="0.55" stroke-linejoin="round" d="M11.04 19.32Q12 21.51 12 24q0-2.49.93-4.68.96-2.19 2.58-3.81t3.81-2.55Q21.51 12 24 12q-2.49 0-4.68-.93a12.3 12.3 0 0 1-3.81-2.58 12.3 12.3 0 0 1-2.58-3.81Q12 2.49 12 0q0 2.49-.96 4.68-.93 2.19-2.55 3.81a12.3 12.3 0 0 1-3.81 2.58Q2.49 12 0 12q2.49 0 4.68.96 2.19.93 3.81 2.55t2.55 3.81" />
                 </svg>
               </span>
-              <span class="sidebar-action-label">AI 회고 요약</span>
+              <span class="sidebar-action-label dismness-label">Dismness</span>
             </button>
             <button id="settings-button" type="button" aria-label="설정">
               <span class="sidebar-action-icon settings-action-icon" aria-hidden="true">⚙</span>

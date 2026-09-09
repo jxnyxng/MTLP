@@ -14,6 +14,7 @@
   height: 100%;
   min-height: 0;
   overflow: auto;
+  overscroll-behavior: contain;
 }
 
 .year-card .task-list,
@@ -219,6 +220,7 @@
   max-height: 118px;
   min-height: 0;
   overflow: auto;
+  overscroll-behavior: contain;
   scrollbar-width: none;
 }
 
@@ -253,12 +255,14 @@
 
 .period-journal-list {
   display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   align-content: start;
   gap: 1px;
   max-height: 118px;
   min-height: 0;
   padding: 5px;
   overflow: auto;
+  overscroll-behavior: contain;
   scrollbar-width: none;
 }
 
@@ -268,7 +272,9 @@
 
 .period-journal-item {
   display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
+  column-gap: 6px;
   min-height: 26px;
   border: 0;
   border-radius: var(--task-block-radius);
@@ -295,7 +301,17 @@
   white-space: nowrap;
 }
 
+.period-journal-date {
+  justify-self: end;
+  color: var(--color-subtle);
+  font-size: 10px;
+  font-weight: 520;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
 .period-journal-empty {
+  grid-column: 1 / -1;
   margin: 0;
   padding: 5px;
   color: var(--color-subtle);

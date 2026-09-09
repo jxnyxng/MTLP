@@ -42,6 +42,7 @@ export function createTaskDragController({
       periodType: list.dataset.periodType,
       targetDate: list.dataset.targetDate,
       timeBlock: list.dataset.timeBlock ?? null,
+      splitLane: list.dataset.splitLane ?? null,
     };
   }
 
@@ -153,6 +154,7 @@ export function createTaskDragController({
           target.targetDate,
           position,
           target.timeBlock,
+          target.splitLane,
         );
         setStatus("Daily로 복사 완료");
       } else {
@@ -162,6 +164,7 @@ export function createTaskDragController({
           target.targetDate,
           position,
           target.timeBlock,
+          target.splitLane,
         );
         setStatus("이동 저장 완료");
       }

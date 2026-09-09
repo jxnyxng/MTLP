@@ -281,6 +281,7 @@ async function addTaskFromInput(
 
   try {
     const sourceList = input.closest(".task-list");
+    const splitLane = sourceList?.dataset.splitLane ?? null;
     await addTask(
       content,
       periodType,
@@ -289,6 +290,7 @@ async function addTaskFromInput(
         ? calculateAppendPosition(sourceList)
         : getNextPosition(tasksFor(periodType, timeBlock, targetDate)),
       timeBlock,
+      splitLane,
     );
     input.value = "";
     setStatus("저장 완료");
@@ -312,6 +314,7 @@ async function addBlankTask(
 
   try {
     const sourceList = trigger.closest(".task-list");
+    const splitLane = sourceList?.dataset.splitLane ?? null;
     const id = await addTask(
       "",
       periodType,
@@ -320,6 +323,7 @@ async function addBlankTask(
         ? calculateAppendPosition(sourceList)
         : getNextPosition(tasksFor(periodType, timeBlock, targetDate)),
       timeBlock,
+      splitLane,
     );
     state.selectedTaskId = null;
     state.pendingEditTaskId = id;
