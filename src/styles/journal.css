@@ -32,45 +32,45 @@
 
 .journal-pages {
   display: grid;
-  grid-template-columns: repeat(auto-fill, 168px);
+  grid-template-columns: repeat(auto-fill, minmax(178px, 1fr));
   justify-items: start;
   align-content: start;
   align-items: start;
-  gap: 10px;
+  gap: 8px;
   min-height: 0;
 }
 
 .journal-page {
   position: relative;
-  width: min(168px, 100%);
-  min-height: 272px;
-  border: 1px solid color-mix(in srgb, var(--color-border), transparent 12%);
-  border-radius: 10px;
-  padding: 46px 18px 18px;
-  background:
-    linear-gradient(
-      to bottom,
-      transparent 0,
-      transparent 30px,
-      color-mix(in srgb, var(--color-border), transparent 68%) 31px
-    ),
-    var(--color-panel);
-  background-size: 100% 31px;
-  box-shadow:
-    0 1px 2px rgb(15 23 42 / 5%),
-    0 18px 48px rgb(15 23 42 / 8%);
+  display: grid;
+  align-content: start;
+  width: 100%;
+  min-height: 154px;
+  border: 1px solid color-mix(in srgb, var(--color-border), transparent 16%);
+  border-radius: 8px;
+  padding: 34px 12px 12px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--color-panel), var(--color-bg) 10%);
+  box-shadow: var(--shadow-panel);
+  cursor: pointer;
+  transition:
+    border-color 140ms ease,
+    background 140ms ease;
 }
 
-.journal-page {
-  cursor: text;
+.journal-page:hover,
+.journal-page:focus-visible {
+  border-color: var(--color-border-strong);
+  background: var(--color-surface);
+  outline: 0;
 }
 
 .journal-date-mark {
   position: absolute;
-  top: 16px;
-  left: 18px;
+  top: 10px;
+  left: 12px;
   color: var(--color-muted);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 650;
 }
 
@@ -99,20 +99,20 @@
   margin: 0;
   overflow: hidden;
   color: color-mix(in srgb, var(--color-text), var(--color-muted) 18%);
-  font-size: 13px;
-  line-height: 24px;
+  font-size: 12px;
+  line-height: 1.45;
   overflow-wrap: anywhere;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 8;
+  -webkit-line-clamp: 5;
 }
 
 .journal-preview-title {
   display: -webkit-box;
-  margin: 0 0 9px;
+  margin: 0 0 7px;
   overflow: hidden;
   color: var(--color-text);
-  font-size: 17px;
-  font-weight: 720;
+  font-size: 14px;
+  font-weight: 700;
   line-height: 1.25;
   overflow-wrap: anywhere;
   -webkit-box-orient: vertical;
@@ -270,7 +270,31 @@
   grid-row: 3;
   border-left: 1px solid var(--color-border);
   padding: 28px 30px 34px;
-  background: color-mix(in srgb, var(--color-panel), var(--color-surface-muted) 28%);
+  background: color-mix(in srgb, var(--color-surface-muted), var(--color-panel) 62%);
+}
+
+.journal-live-preview .journal-rendered {
+  max-width: none;
+}
+
+.journal-live-preview .journal-rendered h1 {
+  margin-bottom: 18px;
+  font-size: 24px;
+}
+
+.journal-live-preview .journal-rendered h2 {
+  font-size: 18px;
+}
+
+.journal-live-preview .journal-rendered h3 {
+  font-size: 16px;
+}
+
+.journal-live-preview .journal-rendered p,
+.journal-live-preview .journal-rendered li,
+.journal-live-preview .journal-rendered blockquote {
+  font-size: 13px;
+  line-height: 1.65;
 }
 
 .journal-rendered {

@@ -74,6 +74,11 @@ export function createJournalRenderer({
     dialog = document.createElement("dialog");
     dialog.id = "journal-editor-modal";
     dialog.className = "journal-editor-modal";
+    dialog.addEventListener("close", () => {
+      requestAnimationFrame(() => {
+        if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+      });
+    });
     document.body.append(dialog);
     return dialog;
   }
