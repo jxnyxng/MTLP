@@ -8,6 +8,11 @@ dialog {
   box-shadow: 0 20px 64px rgb(0 0 0 / 24%);
 }
 
+dialog:focus,
+dialog:focus-visible {
+  outline: 0;
+}
+
 dialog::backdrop {
   background: rgb(3 7 18 / 46%);
 }
@@ -329,5 +334,6 @@ dialog::backdrop {
 
 .detail-panel .day-card,
 .detail-panel .week-day-card {
+  grid-column: auto;
   min-width: 0;
 }

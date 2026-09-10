@@ -82,20 +82,59 @@ export function createJournalRenderer({
     textarea.style.height = `${textarea.scrollHeight}px`;
   }
 
+  function applyTextFormat(textarea, type) {
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const value = textarea.value;
+    const selected = value.slice(start, end);
+    const formats = {
+      heading: [`## ${selected || "소제목"}`, 3, 0],
+      bold: [`**${selected || "굵은 글씨"}**`, 2, 2],
+      italic: [`_${selected || "기울임"}_`, 1, 1],
+      quote: [`> ${selected || "인용문"}`, 2, 0],
+      list: [`- ${selected || "목록"}`, 2, 0],
+    };
+    const format = formats[type];
+    if (!format) return;
+
+    const [replacement, selectionOffset, selectionInset] = format;
+    textarea.value = `${value.slice(0, start)}${replacement}${value.slice(end)}`;
+    const nextStart = start + selectionOffset;
+    const nextEnd = start + replacement.length - selectionInset;
+    textarea.focus();
+    textarea.setSelectionRange(nextStart, nextEnd);
+    textarea.dispatchEvent(new Event("input", { bubbles: true }));
+  }
+
   function openJournalEditor(entry) {
     const dialog = getJournalDialog();
     const sheet = document.createElement("section");
     sheet.className = "journal-editor-sheet";
 
+    const editorHeader = document.createElement("header");
+    editorHeader.className = "journal-editor-header";
+
+    const editorMeta = document.createElement("div");
+    editorMeta.className = "journal-editor-meta";
+
     const mark = document.createElement("span");
-    mark.className = "journal-date-mark";
+    mark.className = "journal-editor-date";
     mark.textContent = entry.target_date;
 
+    const editorTitle = document.createElement("strong");
+    editorTitle.textContent = "Journal";
+    editorMeta.append(editorTitle, mark);
+
     const closeButton = document.createElement("button");
-    closeButton.className = "journal-delete";
+    closeButton.className = "journal-editor-close";
     closeButton.type = "button";
     closeButton.textContent = "×";
     closeButton.setAttribute("aria-label", "일기 닫기");
+
+    editorHeader.append(editorMeta, closeButton);
+
+    const toolbar = document.createElement("div");
+    toolbar.className = "journal-editor-toolbar";
 
     const fields = document.createElement("div");
     fields.className = "journal-editor-fields";
@@ -115,24 +154,78 @@ export function createJournalRenderer({
     textarea.placeholder = "본문";
     textarea.setAttribute("aria-label", "메모 본문");
 
+    [
+      ["heading", "H2", "소제목"],
+      ["bold", "B", "굵게"],
+      ["italic", "I", "기울임"],
+      ["quote", "“”", "인용"],
+      ["list", "•", "목록"],
+    ].forEach(([type, label, title]) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = label;
+      button.title = title;
+      button.setAttribute("aria-label", title);
+      button.addEventListener("click", () => applyTextFormat(textarea, type));
+      toolbar.append(button);
+    });
+
     fields.append(titleInput, textarea);
+
+    const settings = document.createElement("aside");
+    settings.className = "journal-editor-settings";
+
+    const dateGroup = document.createElement("section");
+    dateGroup.className = "journal-setting-group";
+    dateGroup.innerHTML = `<span>날짜</span><strong>${entry.target_date}</strong>`;
+
+    const countGroup = document.createElement("section");
+    countGroup.className = "journal-setting-group";
+    const countValue = document.createElement("strong");
+    const updateCount = () => {
+      countValue.textContent = `${titleInput.value.length + textarea.value.length}자`;
+    };
+    countGroup.append(Object.assign(document.createElement("span"), { textContent: "글자 수" }), countValue);
+
+    const saveStateGroup = document.createElement("section");
+    saveStateGroup.className = "journal-setting-group";
+    const saveState = document.createElement("strong");
+    saveState.textContent = "저장됨";
+    saveStateGroup.append(Object.assign(document.createElement("span"), { textContent: "상태" }), saveState);
+
+    const closeSideButton = document.createElement("button");
+    closeSideButton.className = "journal-editor-save";
+    closeSideButton.type = "button";
+    closeSideButton.textContent = "닫기";
+
+    settings.append(dateGroup, countGroup, saveStateGroup, closeSideButton);
 
     let savedContent = entry.content ?? "";
     const save = async () => {
       const nextContent = composeJournalContent(titleInput.value, textarea.value);
       if (!state.dbReady || nextContent === savedContent) return;
       try {
+        saveState.textContent = "저장 중";
         await updateJournalEntry(entry.id, nextContent);
         savedContent = nextContent;
+        saveState.textContent = "저장됨";
         setStatus("일기 저장 완료");
         await loadAndRender();
       } catch (error) {
         console.error(error);
+        saveState.textContent = "실패";
         setStatus("일기 저장 실패");
       }
     };
 
-    textarea.addEventListener("input", () => resizeJournalInput(textarea));
+    const handleInput = () => {
+      resizeJournalInput(textarea);
+      updateCount();
+      saveState.textContent = "편집 중";
+    };
+    textarea.addEventListener("input", handleInput);
+    titleInput.addEventListener("input", handleInput);
+    titleInput.addEventListener("blur", save);
     titleInput.addEventListener("keydown", (event) => {
       if (event.key !== "Enter" || event.isComposing) return;
       event.preventDefault();
@@ -151,13 +244,18 @@ export function createJournalRenderer({
     });
     dialog.addEventListener("cancel", saveOnCancel, { once: true });
 
-    sheet.append(mark, closeButton, fields);
+    closeSideButton.addEventListener("click", async () => {
+      await save();
+      dialog.removeEventListener("cancel", saveOnCancel);
+      dialog.close();
+    });
+
+    sheet.append(editorHeader, toolbar, fields, settings);
     dialog.replaceChildren(sheet);
     dialog.showModal();
     requestAnimationFrame(() => {
       resizeJournalInput(textarea);
-      titleInput.focus();
-      titleInput.select();
+      updateCount();
     });
   }
 

@@ -362,29 +362,8 @@ button {
   fill: currentColor;
 }
 
-.sidebar-actions .dismness-action {
+.sidebar-actions .review-action {
   margin-top: 5px;
-  color: color-mix(in srgb, var(--color-primary), var(--color-sidebar-text) 25%);
-  font-family: "SFMono-Regular", "Cascadia Code", "Roboto Mono", ui-monospace, monospace;
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: 0;
-}
-
-.sidebar-actions .dismness-action::before {
-  top: 0;
-  height: 36px;
-  border-radius: 6px;
-  background: color-mix(in srgb, var(--color-secondary-soft), var(--color-surface) 38%);
-}
-
-.sidebar-actions .dismness-action:hover::before,
-.sidebar-actions .dismness-action:focus-visible::before {
-  background: color-mix(in srgb, var(--color-secondary-soft), var(--color-primary-soft) 28%);
-}
-
-.dismness-label {
-  text-transform: lowercase;
 }
 
 .settings-action-icon {

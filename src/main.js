@@ -472,10 +472,6 @@ async function openSettings() {
   apiKeySetting.open = false;
   renderThemeOptions();
   modal.showModal();
-  requestAnimationFrame(() => {
-    modal.tabIndex = -1;
-    modal.focus({ preventScroll: true });
-  });
 }
 
 async function saveSettings() {
