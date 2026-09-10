@@ -1,12 +1,20 @@
 .journal-board {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
   align-content: start;
-  gap: 10px;
   min-height: 100%;
-  padding: 12px;
+  padding: 14px;
   overflow: auto;
   overscroll-behavior: contain;
+}
+
+.journal-view-actions {
+  display: grid;
+  grid-template-columns: minmax(180px, 280px) 138px 104px auto auto;
+  align-items: center;
+  justify-content: end;
+  gap: 6px;
+  min-width: 0;
 }
 
 .journal-add-button {
@@ -22,8 +30,43 @@
   line-height: 1;
 }
 
+.journal-search-input,
+.journal-date-input,
+.journal-sort-select {
+  min-width: 0;
+  min-height: 30px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 6px 9px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 12px;
+  line-height: 1;
+  outline: 0;
+}
+
+.journal-search-input:focus,
+.journal-date-input:focus,
+.journal-sort-select:focus {
+  border-color: var(--color-border-strong);
+  background: var(--color-surface);
+}
+
+.journal-clear-button {
+  min-height: 28px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 5px 8px;
+  background: transparent;
+  color: var(--color-muted);
+  font-size: 12px;
+  line-height: 1;
+}
+
 .journal-add-button:hover,
-.journal-add-button:focus-visible {
+.journal-add-button:focus-visible,
+.journal-clear-button:hover,
+.journal-clear-button:focus-visible {
   border-color: var(--color-border-strong);
   background: var(--color-surface-muted);
   color: var(--color-primary);
@@ -32,11 +75,11 @@
 
 .journal-pages {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(178px, 1fr));
-  justify-items: start;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  justify-items: stretch;
   align-content: start;
   align-items: start;
-  gap: 8px;
+  gap: 10px;
   min-height: 0;
 }
 
@@ -44,11 +87,13 @@
   position: relative;
   display: grid;
   align-content: start;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 8px;
   width: 100%;
-  min-height: 154px;
+  min-height: 172px;
   border: 1px solid color-mix(in srgb, var(--color-border), transparent 16%);
   border-radius: 8px;
-  padding: 34px 12px 12px;
+  padding: 14px 12px 12px;
   overflow: hidden;
   background: color-mix(in srgb, var(--color-panel), var(--color-bg) 10%);
   box-shadow: var(--shadow-panel);
@@ -66,9 +111,8 @@
 }
 
 .journal-date-mark {
-  position: absolute;
-  top: 10px;
-  left: 12px;
+  justify-self: end;
+  align-self: end;
   color: var(--color-muted);
   font-size: 11px;
   font-weight: 650;
@@ -76,8 +120,8 @@
 
 .journal-delete {
   position: absolute;
-  top: 10px;
-  right: 10px;
+  top: 8px;
+  right: 8px;
   display: grid;
   place-items: center;
   width: 28px;
@@ -108,7 +152,8 @@
 
 .journal-preview-title {
   display: -webkit-box;
-  margin: 0 0 7px;
+  margin: 0;
+  padding-right: 24px;
   overflow: hidden;
   color: var(--color-text);
   font-size: 14px;
@@ -127,6 +172,16 @@
   color: var(--color-subtle);
 }
 
+.journal-empty-filter {
+  grid-column: 1 / -1;
+  margin: 0;
+  border: 1px dashed color-mix(in srgb, var(--color-border), transparent 12%);
+  border-radius: 8px;
+  padding: 18px;
+  color: var(--color-muted);
+  font-size: 13px;
+}
+
 .journal-editor-modal {
   width: min(1180px, calc(100vw - 24px));
   max-height: calc(100vh - 24px);
@@ -141,7 +196,7 @@
 
 .journal-editor-sheet {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 220px;
+  grid-template-columns: minmax(0, 1fr) 220px;
   grid-template-rows: auto auto minmax(0, 1fr);
   min-height: min(760px, calc(100vh - 24px));
   max-height: calc(100vh - 24px);
@@ -206,7 +261,7 @@
 }
 
 .journal-editor-toolbar {
-  grid-column: 1 / 3;
+  grid-column: 1;
   display: flex;
   align-items: center;
   gap: 4px;
@@ -239,9 +294,20 @@
   outline: 0;
 }
 
+.journal-editor-toolbar button[aria-pressed="true"] {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: var(--color-primary-text);
+}
+
+.journal-editor-toolbar button[aria-pressed="true"]:hover,
+.journal-editor-toolbar button[aria-pressed="true"]:focus-visible {
+  background: color-mix(in srgb, var(--color-primary), var(--color-surface) 18%);
+  color: var(--color-primary-text);
+}
+
 .journal-editor-fields {
   grid-column: 1;
-  grid-row: 3;
   display: grid;
   align-content: start;
   grid-template-rows: auto minmax(0, 1fr);
@@ -252,49 +318,16 @@
   overscroll-behavior: contain;
 }
 
-.journal-reader,
-.journal-live-preview {
+.journal-reader {
   min-height: 0;
   overflow: auto;
   overscroll-behavior: contain;
 }
 
 .journal-reader {
-  grid-column: 1 / 3;
+  grid-column: 1;
   grid-row: 2 / 4;
   padding: 34px 42px 42px;
-}
-
-.journal-live-preview {
-  grid-column: 2;
-  grid-row: 3;
-  border-left: 1px solid var(--color-border);
-  padding: 28px 30px 34px;
-  background: color-mix(in srgb, var(--color-surface-muted), var(--color-panel) 62%);
-}
-
-.journal-live-preview .journal-rendered {
-  max-width: none;
-}
-
-.journal-live-preview .journal-rendered h1 {
-  margin-bottom: 18px;
-  font-size: 24px;
-}
-
-.journal-live-preview .journal-rendered h2 {
-  font-size: 18px;
-}
-
-.journal-live-preview .journal-rendered h3 {
-  font-size: 16px;
-}
-
-.journal-live-preview .journal-rendered p,
-.journal-live-preview .journal-rendered li,
-.journal-live-preview .journal-rendered blockquote {
-  font-size: 13px;
-  line-height: 1.65;
 }
 
 .journal-rendered {
@@ -370,14 +403,13 @@
 
 .journal-editor-sheet[data-mode="read"] .journal-editor-toolbar,
 .journal-editor-sheet[data-mode="read"] .journal-editor-fields,
-.journal-editor-sheet[data-mode="read"] .journal-live-preview,
 .journal-editor-sheet[data-mode="edit"] .journal-reader,
 .journal-editor-sheet[data-mode="edit"] .journal-editor-edit {
   display: none;
 }
 
 .journal-title-input,
-.journal-body-textarea {
+.journal-body-editor {
   width: 100%;
   border: 0;
   padding: 0;
@@ -393,20 +425,76 @@
   line-height: 1.25;
 }
 
-.journal-body-textarea {
+.journal-body-editor {
   min-height: 560px;
-  resize: none;
+  cursor: text;
   font-size: 14px;
   line-height: 1.75;
 }
 
+.journal-body-editor:empty::before {
+  content: attr(data-placeholder);
+  color: var(--color-subtle);
+}
+
+.journal-body-editor h2,
+.journal-body-editor h3,
+.journal-body-editor h4 {
+  margin: 18px 0 8px;
+  font-weight: 720;
+  line-height: 1.25;
+}
+
+.journal-body-editor h2 {
+  font-size: 22px;
+}
+
+.journal-body-editor h3 {
+  font-size: 18px;
+}
+
+.journal-body-editor h4 {
+  font-size: 15px;
+}
+
+.journal-body-editor p,
+.journal-body-editor div,
+.journal-body-editor li,
+.journal-body-editor blockquote {
+  font-size: 15px;
+  line-height: 1.8;
+}
+
+.journal-body-editor ul {
+  display: grid;
+  gap: 6px;
+  margin: 0 0 16px;
+  padding-left: 22px;
+}
+
+.journal-body-editor blockquote {
+  margin: 0 0 16px;
+  border-left: 3px solid var(--color-border-strong);
+  padding: 8px 12px;
+  background: var(--color-surface-muted);
+  color: color-mix(in srgb, var(--color-text), var(--color-muted) 18%);
+}
+
+.journal-body-editor code {
+  border-radius: 4px;
+  padding: 1px 4px;
+  background: var(--color-surface-muted);
+  color: var(--color-primary);
+  font-size: 0.92em;
+}
+
 .journal-title-input::placeholder,
-.journal-body-textarea::placeholder {
+.journal-body-editor::placeholder {
   color: var(--color-subtle);
 }
 
 .journal-editor-settings {
-  grid-column: 3;
+  grid-column: 2;
   grid-row: 2 / 4;
   display: grid;
   align-content: start;
@@ -457,7 +545,20 @@
   outline: 0;
 }
 
+.journal-editor-cancel {
+  color: var(--color-muted);
+}
+
 @media (max-width: 760px) {
+  .journal-view-actions {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+  }
+
+  .journal-add-button {
+    justify-self: stretch;
+  }
+
   .journal-editor-sheet {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -468,8 +569,7 @@
   }
 
   .journal-reader,
-  .journal-editor-fields,
-  .journal-live-preview {
+  .journal-editor-fields {
     grid-column: 1;
     grid-row: auto;
   }
@@ -479,12 +579,6 @@
   }
 
   .journal-editor-fields {
-    padding: 22px 20px 28px;
-  }
-
-  .journal-live-preview {
-    border-top: 1px solid var(--color-border);
-    border-left: 0;
     padding: 22px 20px 28px;
   }
 

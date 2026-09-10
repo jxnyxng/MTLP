@@ -48,6 +48,7 @@ import {
 
 const app = document.querySelector("#app");
 let renderVersion = 0;
+let renderJournalActions;
 let renderJournalPanel;
 let openJournalEditor;
 let renderThemeOptions;
@@ -485,7 +486,7 @@ async function saveSettings() {
   }
 }
 
-({ openJournalEditor, renderJournalPanel } = createJournalRenderer({
+({ openJournalEditor, renderJournalActions, renderJournalPanel } = createJournalRenderer({
   state,
   addJournalEntry,
   deleteJournalEntry,
@@ -589,6 +590,7 @@ async function saveSettings() {
   parseDateInput,
   periodLabel,
   requestReview,
+  renderJournalActions,
   shiftDate,
   shiftedPeriodDate,
   switchTab,

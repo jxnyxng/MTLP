@@ -11,6 +11,7 @@ export function createShellRenderer({
   parseDateInput,
   periodLabel,
   requestReview,
+  renderJournalActions,
   shiftDate,
   shiftedPeriodDate,
   switchTab,
@@ -193,6 +194,14 @@ export function createShellRenderer({
       actionItems.push(createTimelineRangeControls(state.anchorDate, timelineRangeFor(state.anchorDate)));
     }
 
+    actions.classList.toggle("journal-view-actions", state.activeTab === "JOURNAL");
+    actions.replaceChildren();
+    if (state.activeTab === "JOURNAL") {
+      renderJournalActions?.(actions);
+    } else {
+      actions.replaceChildren(...actionItems);
+    }
+
     const lockButton = document.createElement("button");
     lockButton.type = "button";
     lockButton.className = "lock-mode-button";
@@ -215,7 +224,6 @@ export function createShellRenderer({
       await loadAndRender();
     });
 
-    actions.replaceChildren(...actionItems);
     lockActions.replaceChildren(...(state.activeTab === "JOURNAL" ? [] : [lockButton]));
   }
 
