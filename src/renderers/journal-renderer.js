@@ -1,4 +1,5 @@
 import { composeJournalContent, splitJournalContent } from "../journal-utils.js";
+import { createJournalMarkdownView } from "./journal-markdown-renderer.js";
 
 export function createJournalRenderer({
   state,
@@ -106,10 +107,11 @@ export function createJournalRenderer({
     textarea.dispatchEvent(new Event("input", { bubbles: true }));
   }
 
-  function openJournalEditor(entry) {
+  function openJournalEditor(entry, mode = "read") {
     const dialog = getJournalDialog();
     const sheet = document.createElement("section");
     sheet.className = "journal-editor-sheet";
+    sheet.dataset.mode = mode;
 
     const editorHeader = document.createElement("header");
     editorHeader.className = "journal-editor-header";
@@ -154,6 +156,11 @@ export function createJournalRenderer({
     textarea.placeholder = "본문";
     textarea.setAttribute("aria-label", "메모 본문");
 
+    const reader = document.createElement("div");
+    reader.className = "journal-reader";
+    const rendered = document.createElement("div");
+    rendered.className = "journal-live-preview";
+
     [
       ["heading", "H2", "소제목"],
       ["bold", "B", "굵게"],
@@ -171,6 +178,8 @@ export function createJournalRenderer({
     });
 
     fields.append(titleInput, textarea);
+    reader.append(createJournalMarkdownView(title, body));
+    rendered.append(createJournalMarkdownView(title, body));
 
     const settings = document.createElement("aside");
     settings.className = "journal-editor-settings";
@@ -198,7 +207,12 @@ export function createJournalRenderer({
     closeSideButton.type = "button";
     closeSideButton.textContent = "닫기";
 
-    settings.append(dateGroup, countGroup, saveStateGroup, closeSideButton);
+    const editButton = document.createElement("button");
+    editButton.className = "journal-editor-save journal-editor-edit";
+    editButton.type = "button";
+    editButton.textContent = "수정";
+
+    settings.append(dateGroup, countGroup, saveStateGroup, editButton, closeSideButton);
 
     let savedContent = entry.content ?? "";
     const save = async () => {
@@ -221,6 +235,7 @@ export function createJournalRenderer({
     const handleInput = () => {
       resizeJournalInput(textarea);
       updateCount();
+      rendered.replaceChildren(createJournalMarkdownView(titleInput.value, textarea.value));
       saveState.textContent = "편집 중";
     };
     textarea.addEventListener("input", handleInput);
@@ -250,7 +265,15 @@ export function createJournalRenderer({
       dialog.close();
     });
 
-    sheet.append(editorHeader, toolbar, fields, settings);
+    editButton.addEventListener("click", () => {
+      sheet.dataset.mode = "edit";
+      requestAnimationFrame(() => {
+        resizeJournalInput(textarea);
+        titleInput.focus();
+      });
+    });
+
+    sheet.append(editorHeader, toolbar, reader, fields, rendered, settings);
     dialog.replaceChildren(sheet);
     dialog.showModal();
     requestAnimationFrame(() => {
@@ -270,7 +293,7 @@ export function createJournalRenderer({
       setStatus("일기장 추가 완료");
       await loadAndRender();
       const entry = state.journalEntries.find((journalEntry) => Number(journalEntry.id) === Number(id));
-      if (entry) openJournalEditor(entry);
+      if (entry) openJournalEditor(entry, "edit");
     } catch (error) {
       console.error(error);
       setStatus("일기장 추가 실패");
