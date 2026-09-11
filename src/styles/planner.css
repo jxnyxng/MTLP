@@ -910,8 +910,10 @@
   display: grid;
   grid-column: 1;
   grid-row: 1;
+  align-self: center;
   place-items: center;
   width: var(--planner-task-icon-width);
+  min-height: var(--planner-task-row-min-height);
   color: var(--color-primary);
   font-size: var(--planner-task-icon-font-size);
   line-height: 1;
@@ -969,6 +971,8 @@
 
 .delete-button {
   display: grid;
+  align-self: center;
+  justify-self: center;
   place-items: center;
   width: var(--planner-task-control-size);
   height: var(--planner-task-control-size);
@@ -977,11 +981,19 @@
   opacity: 0;
   background: transparent;
   color: var(--color-danger);
+  font-size: var(--planner-task-icon-font-size);
+  line-height: 1;
 }
 
 .task-item:hover .delete-button,
 .delete-button:focus-visible {
   opacity: 1;
+}
+
+.task-item.is-editing-task .delete-button {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .delete-button:hover {

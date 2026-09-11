@@ -12,30 +12,7 @@ export function createTaskDragController({
   let dragPointerListener = null;
 
   const DROP_PROXIMITY = 18;
-
-  function calculateDropPosition(list, item) {
-    const taskItems = Array.from(list.children).filter((child) =>
-      child.classList.contains("task-item"),
-    );
-    const index = taskItems.indexOf(item);
-    const previous = index > 0 ? taskItems[index - 1] : null;
-    const next = index >= 0 ? taskItems[index + 1] : null;
-
-    const previousPosition = previous?.classList.contains("task-item")
-      ? Number(previous.dataset.position)
-      : null;
-    const nextPosition = next?.classList.contains("task-item")
-      ? Number(next.dataset.position)
-      : null;
-
-    if (previousPosition !== null && nextPosition !== null) {
-      return Math.floor((previousPosition + nextPosition) / 2);
-    }
-
-    if (previousPosition !== null) return previousPosition + 1000;
-    if (nextPosition !== null) return Math.max(1, Math.floor(nextPosition / 2));
-    return 1000;
-  }
+  const POSITION_STEP = 1000;
 
   function dropTargetFor(list) {
     return {
@@ -50,8 +27,32 @@ export function createTaskDragController({
     const positions = Array.from(list.children)
       .filter((child) => child.classList.contains("task-item"))
       .map((child) => Number(child.dataset.position) || 0);
-    if (!positions.length) return 1000;
-    return Math.max(...positions) + 1000;
+    if (!positions.length) return POSITION_STEP;
+    return Math.max(...positions) + POSITION_STEP;
+  }
+
+  function taskItemsFor(list) {
+    return Array.from(list?.children ?? []).filter((child) =>
+      child.classList.contains("task-item"),
+    );
+  }
+
+  async function saveListOrder(list) {
+    if (!list?.classList.contains("task-list")) return;
+
+    const target = dropTargetFor(list);
+    const updates = taskItemsFor(list).map((item, index) =>
+      moveTask(
+        Number(item.dataset.id),
+        target.periodType,
+        target.targetDate,
+        (index + 1) * POSITION_STEP,
+        target.timeBlock,
+        target.splitLane,
+      ),
+    );
+
+    await Promise.all(updates);
   }
 
   function clearDropTargets({ resetDrag = false } = {}) {
@@ -140,7 +141,7 @@ export function createTaskDragController({
     return pointerY < rect.top + rect.height / 2 ? -1 : 1;
   }
 
-  async function saveDroppedTask(event, position = calculateDropPosition(event.to, event.item)) {
+  async function saveDroppedTask(event, { appendOnly = false } = {}) {
     if (!state.dbReady) return;
 
     const fromType = event.from.dataset.periodType;
@@ -152,20 +153,23 @@ export function createTaskDragController({
           event.item.dataset.content,
           "DAILY",
           target.targetDate,
-          position,
+          calculateAppendPosition(event.to),
           target.timeBlock,
           target.splitLane,
         );
         setStatus("Daily로 복사 완료");
-      } else {
+      } else if (appendOnly) {
         await moveTask(
           Number(event.item.dataset.id),
           target.periodType,
           target.targetDate,
-          position,
+          calculateAppendPosition(event.to),
           target.timeBlock,
           target.splitLane,
         );
+        setStatus("이동 저장 완료");
+      } else {
+        await saveListOrder(event.to);
         setStatus("이동 저장 완료");
       }
       await loadAndRender();
@@ -224,7 +228,7 @@ export function createTaskDragController({
           markDropTarget(targetList);
           if (event.to !== dragSourceList) {
             pendingDropList = targetList;
-            return false;
+            return insertionDirection(event);
           }
 
           pendingDropList = null;
@@ -233,28 +237,29 @@ export function createTaskDragController({
         async onEnd(event) {
           event.item.style.removeProperty("--drag-width");
           event.item.style.removeProperty("--drag-height");
-          const targetList = pendingDropList;
+          const fallbackTargetList = pendingDropList;
           clearDropTargets({ resetDrag: true });
-          if (didDropInOriginalPlace(event)) {
-            setStatus("이동 취소");
+
+          if (event.from !== event.to) {
+            await saveDroppedTask(event);
             return;
           }
 
-          if (targetList && targetList !== event.from) {
+          if (fallbackTargetList && fallbackTargetList !== event.from) {
             await saveDroppedTask(
               {
                 item: event.item,
                 from: event.from,
-                to: targetList,
+                to: fallbackTargetList,
                 pullMode: event.pullMode,
               },
-              calculateAppendPosition(targetList),
+              { appendOnly: true },
             );
             return;
           }
 
-          if (event.from !== event.to) {
-            await loadAndRender();
+          if (didDropInOriginalPlace(event)) {
+            setStatus("이동 취소");
             return;
           }
 
