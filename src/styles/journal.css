@@ -403,6 +403,7 @@
 
 .journal-editor-sheet[data-mode="read"] .journal-editor-toolbar,
 .journal-editor-sheet[data-mode="read"] .journal-editor-fields,
+.journal-editor-sheet[data-mode="read"] .journal-editor-save:not(.journal-editor-edit, .journal-editor-cancel),
 .journal-editor-sheet[data-mode="edit"] .journal-reader,
 .journal-editor-sheet[data-mode="edit"] .journal-editor-edit {
   display: none;

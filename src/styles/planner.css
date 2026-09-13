@@ -283,17 +283,24 @@
 .period-overview {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
   min-height: 0;
-  padding: var(--planner-overview-padding);
-  background: color-mix(in srgb, var(--color-surface-muted), var(--color-panel) 42%);
+  border-top: 1px solid color-mix(in srgb, var(--color-border), transparent 18%);
+  border-radius: 0 0 var(--task-block-radius) var(--task-block-radius);
+  padding: 6px;
+  background: var(--color-surface);
 }
 
 .period-overview-card {
-  background: color-mix(in srgb, var(--color-primary-soft), var(--color-panel) 68%);
+  border-color: color-mix(in srgb, var(--color-border), transparent 8%);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-panel);
 }
 
 .period-overview-card > h3 {
   border-bottom: 0;
+  background: var(--color-surface);
+  color: var(--color-text);
 }
 
 .period-overview .split-task-stack {
@@ -317,9 +324,24 @@
   display: none;
 }
 
+.period-overview .task-item,
+.period-overview .empty-read-row {
+  border: 1px solid color-mix(in srgb, var(--color-border), transparent 26%);
+  background: color-mix(in srgb, var(--color-surface), var(--color-bg) 8%);
+  box-shadow: var(--shadow-panel);
+}
+
+.period-overview .add-task-row {
+  border: 1px dashed transparent;
+  background: transparent;
+  box-shadow: none;
+}
+
 .period-summary-card {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
+  align-content: start;
+  gap: 0;
   min-width: 0;
   min-height: 0;
   overflow: hidden;
@@ -327,29 +349,30 @@
 }
 
 .period-summary-card + .period-summary-card {
-  border-left: 1px solid color-mix(in srgb, var(--color-border), transparent 18%);
+  border-left: 0;
 }
 
 .period-summary-card > h3 {
   min-height: var(--planner-summary-heading-min-height);
-  margin: 0;
-  border-bottom: 0;
-  padding: var(--planner-summary-heading-padding);
+  margin: 0 0 5px;
+  border: 0;
+  padding: 0 2px;
   background: transparent;
-  color: var(--color-text);
+  color: color-mix(in srgb, var(--color-muted), var(--color-text) 18%);
   font-size: var(--planner-summary-heading-font-size);
-  font-weight: 650;
-  line-height: 1.2;
+  font-weight: 720;
+  line-height: 1.1;
+  text-transform: uppercase;
 }
 
 .period-journal-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   align-content: start;
-  gap: 1px;
+  gap: 4px;
   max-height: 118px;
   min-height: 0;
-  padding: 5px;
+  padding: 0;
   overflow: auto;
   overscroll-behavior: contain;
   scrollbar-width: none;
@@ -365,11 +388,12 @@
   align-items: center;
   column-gap: 6px;
   min-height: 26px;
-  border: 0;
+  border: 1px solid color-mix(in srgb, var(--color-border), transparent 26%);
   border-radius: var(--task-block-radius);
   padding: 3px 5px;
-  background: transparent;
+  background: color-mix(in srgb, var(--color-surface), var(--color-bg) 8%);
   color: var(--color-text);
+  box-shadow: var(--shadow-panel);
   text-align: left;
 }
 
@@ -429,6 +453,7 @@
 }
 
 .period-staging-card.is-collapsed > .period-overview {
+  border-top: 0;
   padding-top: 0;
   padding-bottom: 0;
 }
@@ -443,6 +468,10 @@
   overflow: hidden;
   padding: 0;
   border-radius: 8px 8px 0 0;
+}
+
+.period-overview-card > h3 {
+  border-radius: var(--task-block-radius) var(--task-block-radius) 0 0;
 }
 
 .staging-toggle {
@@ -467,9 +496,14 @@
   background: color-mix(in srgb, var(--color-primary-soft), transparent 32%);
 }
 
+.period-overview-card > h3:has(.staging-toggle:hover),
+.period-overview-card > h3:has(.staging-toggle:focus-visible) {
+  background: color-mix(in srgb, var(--color-primary-soft), var(--color-surface) 34%);
+}
+
 .staging-toggle:hover,
 .staging-toggle:focus-visible {
-  background: transparent;
+  background: inherit;
   color: var(--color-primary);
   outline: 0;
 }
@@ -478,7 +512,17 @@
   border-radius: 8px;
 }
 
+.period-overview-card.is-collapsed > h3 {
+  border-bottom: 0;
+  border-radius: var(--task-block-radius);
+  overflow: hidden;
+}
+
 .period-staging-card.is-collapsed .staging-toggle {
+  border-radius: inherit;
+}
+
+.period-overview-card.is-collapsed .staging-toggle {
   border-radius: inherit;
 }
 
@@ -533,6 +577,8 @@
 
 .period-overview-card > h3 {
   border-bottom: 0;
+  background: var(--color-surface);
+  color: var(--color-text);
 }
 
 .year-card h3:has(.heading-link),
@@ -1004,20 +1050,37 @@
   pointer-events: none;
 }
 
-body:not(.is-editing) .drag-handle,
-body:not(.is-editing) .delete-button {
-  display: none;
+body.is-locked .add-task-button:disabled {
+  opacity: 0 !important;
+  pointer-events: none;
 }
 
-body:not(.is-editing) .task-item {
-  grid-template-columns: var(--planner-read-task-row-columns);
+body.is-locked .task-item,
+body.is-locked .task-content,
+body.is-locked .add-task-row,
+body.is-locked .add-task-button {
   cursor: default;
 }
 
-body:not(.is-editing) .task-item:hover {
-  background: transparent;
+body.is-locked .drag-handle,
+body.is-locked .delete-button,
+body:not(.is-editing) .drag-handle,
+body:not(.is-editing) .delete-button {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
 }
 
+body.is-locked .task-item:hover,
+body.is-locked .add-task-row:hover,
+body.is-locked .add-task-row:focus-within,
+body:not(.is-editing) .task-item:hover {
+  background: transparent;
+  box-shadow: none;
+}
+
+body.is-locked .task-item:hover .bullet,
+body.is-locked .task-item:focus-within .bullet,
 body:not(.is-editing) .task-item:hover .bullet,
 body:not(.is-editing) .task-item:focus-within .bullet {
   opacity: 1;
@@ -1054,6 +1117,19 @@ body:not(.is-editing) .task-item:focus-within .bullet {
   color: var(--color-primary);
   opacity: 1;
   outline: none;
+}
+
+body.is-locked .add-task-row:hover .add-task-button:disabled,
+body.is-locked .add-task-row:focus-within .add-task-button:disabled,
+body.is-locked .add-task-button:disabled:hover,
+body.is-locked .add-task-button:disabled:focus-visible {
+  opacity: 0 !important;
+  outline: none;
+}
+
+body.is-locked .add-task-row:hover,
+body.is-locked .add-task-row:focus-within {
+  background: transparent;
 }
 
 .entry-row textarea {
@@ -1094,12 +1170,16 @@ body:not(.is-editing) .task-item:focus-within .bullet {
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-primary), transparent 48%);
 }
 
+.is-dragging-task .task-ghost {
+  display: none !important;
+}
+
 .drop-list-target > .task-ghost {
   display: none;
 }
 
 .reorder-list-target > .task-ghost {
-  display: grid;
+  display: grid !important;
   min-height: var(--planner-task-row-min-height);
   height: auto;
   padding: 2px 3px;
@@ -1123,6 +1203,21 @@ body:not(.is-editing) .task-item:focus-within .bullet {
   pointer-events: none;
 }
 
+.is-dragging-task .task-item:hover {
+  background: transparent;
+  box-shadow: none;
+}
+
+.is-dragging-task .task-item:hover .drag-handle,
+.is-dragging-task .task-item:focus-within .drag-handle {
+  opacity: 0;
+}
+
+.is-dragging-task .task-item:hover .bullet,
+.is-dragging-task .task-item:focus-within .bullet {
+  opacity: 1;
+}
+
 .drop-target {
   background: var(--color-secondary-soft);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-primary), transparent 30%);
@@ -1143,7 +1238,7 @@ body:not(.is-editing) .task-item:focus-within .bullet {
 }
 
 .is-dragging-task .drop-list-target > .add-task-row .add-task-button {
-  opacity: 0;
+  opacity: 0 !important;
 }
 
 .timeline {
@@ -1187,13 +1282,27 @@ body:not(.is-editing) .task-item:focus-within .bullet {
   min-height: 100%;
 }
 
+.hour-row .task-stack {
+  align-content: stretch;
+}
+
 .hour-row .task-list:not(:has(.task-item)) {
   align-content: stretch;
 }
 
+.hour-row .task-list:not(:has(.task-item)) .add-task-row {
+  align-self: stretch;
+}
+
+.hour-row .add-task-button {
+  align-self: center;
+  height: auto;
+  min-height: 26px;
+}
+
 .hour-row .empty-read-row {
   grid-template-columns: 1fr;
-  min-height: 30px;
+  min-height: var(--planner-task-row-min-height);
 }
 
 .hour-row strong {
@@ -1283,4 +1392,21 @@ body:not(.is-editing) .task-item:focus-within .bullet {
 .hour-row,
 .hour-row strong {
   border-radius: var(--task-block-radius) !important;
+}
+
+.period-overview-card:not(.is-collapsed) > h3 {
+  border-radius: var(--task-block-radius) var(--task-block-radius) 0 0 !important;
+}
+
+.period-overview-card:not(.is-collapsed) > .period-overview {
+  border-radius: 0 0 var(--task-block-radius) var(--task-block-radius) !important;
+}
+
+.period-overview-card.is-collapsed > h3,
+.period-overview-card.is-collapsed .staging-toggle {
+  border-radius: var(--task-block-radius) !important;
+}
+
+.period-overview-card.is-collapsed > .period-overview {
+  border-top: 0 !important;
 }

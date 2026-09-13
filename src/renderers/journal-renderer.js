@@ -145,12 +145,17 @@ export function createJournalRenderer({
     selection.addRange(range);
   }
 
+  function blockFormatValue() {
+    return String(document.queryCommandValue("formatBlock") || "").toLowerCase();
+  }
+
   function applyTextFormat(editor, type) {
     editor.focus();
-    if (type === "heading") document.execCommand("formatBlock", false, "h2");
+    const blockFormat = blockFormatValue();
+    if (type === "heading") document.execCommand("formatBlock", false, blockFormat === "h2" ? "p" : "h2");
     if (type === "bold") document.execCommand("bold");
     if (type === "italic") document.execCommand("italic");
-    if (type === "quote") document.execCommand("formatBlock", false, "blockquote");
+    if (type === "quote") document.execCommand("formatBlock", false, blockFormat === "blockquote" ? "p" : "blockquote");
     if (type === "list") document.execCommand("insertUnorderedList");
     editor.dispatchEvent(new Event("input", { bubbles: true }));
   }
@@ -159,8 +164,8 @@ export function createJournalRenderer({
     if (type === "bold") return document.queryCommandState("bold");
     if (type === "italic") return document.queryCommandState("italic");
     if (type === "list") return document.queryCommandState("insertUnorderedList");
-    if (type === "heading") return document.queryCommandValue("formatBlock").toLowerCase() === "h2";
-    if (type === "quote") return document.queryCommandValue("formatBlock").toLowerCase() === "blockquote";
+    if (type === "heading") return blockFormatValue() === "h2";
+    if (type === "quote") return blockFormatValue() === "blockquote";
     return false;
   }
 
@@ -230,7 +235,7 @@ export function createJournalRenderer({
       ["heading", "H2", "소제목"],
       ["bold", "B", "굵게"],
       ["italic", "I", "기울임"],
-      ["quote", "“”", "인용"],
+      ["quote", ">", "인용"],
       ["list", "•", "목록"],
     ].forEach(([type, label, title]) => {
       const button = document.createElement("button");
@@ -256,7 +261,10 @@ export function createJournalRenderer({
     };
 
     fields.append(titleInput, bodyEditor);
-    reader.append(createJournalMarkdownView(title, body));
+    const renderReader = () => {
+      const { title: savedTitle, body: savedBody } = splitJournalContent(savedContent);
+      reader.replaceChildren(createJournalMarkdownView(savedTitle, savedBody));
+    };
 
     const settings = document.createElement("aside");
     settings.className = "journal-editor-settings";
@@ -287,26 +295,54 @@ export function createJournalRenderer({
     const cancelButton = document.createElement("button");
     cancelButton.className = "journal-editor-save journal-editor-cancel";
     cancelButton.type = "button";
-    cancelButton.textContent = "닫기";
+    cancelButton.textContent = "취소";
 
     const editButton = document.createElement("button");
     editButton.className = "journal-editor-save journal-editor-edit";
     editButton.type = "button";
     editButton.textContent = "수정";
 
-    settings.append(dateGroup, countGroup, saveStateGroup, editButton, saveButton, cancelButton);
-
     let savedContent = entry.content ?? "";
     let isSaved = false;
+    renderReader();
+    settings.append(dateGroup, countGroup, saveStateGroup, editButton, saveButton, cancelButton);
+
+    const setEditorMode = (nextMode) => {
+      sheet.dataset.mode = nextMode;
+      saveState.textContent = nextMode === "edit" ? "편집 중" : "저장됨";
+      cancelButton.textContent = nextMode === "edit" ? "취소" : "닫기";
+      if (nextMode === "edit") {
+        requestAnimationFrame(() => {
+          titleInput.focus();
+          updateFormatButtonStates();
+        });
+      }
+    };
+
+    const resetEditorToSavedContent = () => {
+      const { title: savedTitle, body: savedBody } = splitJournalContent(savedContent);
+      titleInput.value = savedTitle;
+      bodyEditor.replaceChildren();
+      appendJournalMarkdownBlocks(bodyEditor, savedBody);
+      updateCount();
+      updateFormatButtonStates();
+    };
+
     const currentContent = () =>
       composeJournalContent(titleInput.value, journalEditorBodyToMarkdown(bodyEditor));
     const save = async () => {
       const nextContent = currentContent();
-      if (!state.dbReady || nextContent === savedContent) return true;
+      const needsJournalRow = isDraft && !isSaved;
       if (!nextContent.trim()) {
         saveState.textContent = "내용 필요";
         setStatus("제목이나 내용이 있어야 저장할 수 있습니다.");
         return false;
+      }
+      if (!state.dbReady) return false;
+      if (nextContent === savedContent && !needsJournalRow) {
+        renderReader();
+        setEditorMode("read");
+        return true;
       }
       try {
         saveState.textContent = "저장 중";
@@ -317,8 +353,11 @@ export function createJournalRenderer({
         }
         await updateJournalEntry(entry.id, nextContent);
         savedContent = nextContent;
+        entry.content = nextContent;
         saveState.textContent = "저장됨";
         setStatus("일기 저장 완료");
+        renderReader();
+        setEditorMode("read");
         await loadAndRender();
         return true;
       } catch (error) {
@@ -344,19 +383,23 @@ export function createJournalRenderer({
       event.preventDefault();
       focusEditorEnd(bodyEditor);
     });
-    const hasUnsavedChanges = () => (isDraft && !isSaved) || currentContent() !== savedContent;
-    const closeOrConfirmCancel = () => {
+    const hasUnsavedChanges = () => {
+      const nextContent = currentContent();
+      if (isDraft && !isSaved) return Boolean(nextContent.trim());
+      return nextContent !== savedContent;
+    };
+    const closeEditor = () => {
       if (hasUnsavedChanges() && !window.confirm("작성 중인 내용을 취소할까요?")) return;
       dialog.close();
     };
 
     closeButton.addEventListener("click", () => {
-      closeOrConfirmCancel();
+      closeEditor();
     });
     const handleCancel = (event) => {
       if (!hasUnsavedChanges()) return;
       event.preventDefault();
-      closeOrConfirmCancel();
+      closeEditor();
     };
     dialog.addEventListener("cancel", handleCancel);
     dialog.addEventListener("close", () => {
@@ -368,19 +411,28 @@ export function createJournalRenderer({
     });
 
     cancelButton.addEventListener("click", () => {
-      closeOrConfirmCancel();
+      if (sheet.dataset.mode === "read") {
+        dialog.close();
+        return;
+      }
+      if (hasUnsavedChanges() && !window.confirm("편집 내용을 되돌릴까요?")) return;
+      if (isDraft && !isSaved) {
+        dialog.close();
+        return;
+      }
+      resetEditorToSavedContent();
+      renderReader();
+      setEditorMode("read");
     });
 
     editButton.addEventListener("click", () => {
-      sheet.dataset.mode = "edit";
-      requestAnimationFrame(() => {
-        titleInput.focus();
-      });
+      setEditorMode("edit");
     });
 
     sheet.append(editorHeader, toolbar, reader, fields, settings);
     dialog.replaceChildren(sheet);
     dialog.showModal();
+    setEditorMode(mode);
     requestAnimationFrame(() => {
       updateCount();
       updateFormatButtonStates();

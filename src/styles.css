@@ -660,6 +660,17 @@ button {
   overflow: auto;
 }
 
+.future-panel,
+.yearly-panel,
+.monthly-panel,
+.weekly-panel,
+.daily-panel,
+.journal-panel {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
 .companion-panel {
   background: var(--color-panel);
   min-width: 0;
@@ -668,6 +679,15 @@ button {
   transition:
     opacity 210ms ease,
     transform 260ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.companion-panel.future-panel,
+.companion-panel.yearly-panel,
+.companion-panel.monthly-panel,
+.companion-panel.weekly-panel,
+.companion-panel.daily-panel,
+.companion-panel.journal-panel {
+  background: transparent;
 }
 
 .side-panel-open .companion-panel {

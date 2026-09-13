@@ -217,6 +217,7 @@ export function createTaskRenderer({
     _placeholder,
     timeBlock = null,
     targetDate = targetFor(periodType),
+    { disabled = false } = {},
   ) {
     const row = document.createElement("li");
     row.className = "add-task-row";
@@ -226,9 +227,15 @@ export function createTaskRenderer({
     button.type = "button";
     button.textContent = "+";
     button.setAttribute("aria-label", "빈 블록 추가");
-    button.addEventListener("click", async () => {
-      await addBlankTask(button, periodType, timeBlock, targetDate);
-    });
+    if (disabled) {
+      button.disabled = true;
+      button.tabIndex = -1;
+      button.setAttribute("aria-hidden", "true");
+    } else {
+      button.addEventListener("click", async () => {
+        await addBlankTask(button, periodType, timeBlock, targetDate);
+      });
+    }
     row.append(button);
     return row;
   }
@@ -243,7 +250,20 @@ export function createTaskRenderer({
   function renderTaskList(list, periodType, tasks, placeholder) {
     const taskItems = tasks.map(createTaskItem);
     if (state.isLocked) {
-      list.replaceChildren(...taskItems, ...(taskItems.length ? [] : [createEmptyReadItem()]));
+      list.replaceChildren(
+        ...taskItems,
+        ...(taskItems.length
+          ? []
+          : [
+              createEntryInput(
+                periodType,
+                placeholder,
+                list.dataset.timeBlock ?? null,
+                list.dataset.targetDate,
+                { disabled: true },
+              ),
+            ]),
+      );
       return;
     }
   

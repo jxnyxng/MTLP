@@ -10,6 +10,7 @@ export function createTaskDragController({
   let dragSourceList = null;
   let pendingDropList = null;
   let dragPointerListener = null;
+  let activeDropList = null;
 
   const DROP_PROXIMITY = 18;
   const POSITION_STEP = 1000;
@@ -59,6 +60,7 @@ export function createTaskDragController({
     document.querySelectorAll(".drop-target, .drop-list-target, .reorder-list-target").forEach((element) => {
       element.classList.remove("drop-target", "drop-list-target", "reorder-list-target");
     });
+    activeDropList = null;
     if (resetDrag) {
       document.body.classList.remove("is-dragging-task");
       dragSourceList = null;
@@ -71,7 +73,10 @@ export function createTaskDragController({
   }
 
   function markDropTarget(list) {
+    if (list === activeDropList) return;
+
     clearDropTargets();
+    activeDropList = list?.classList.contains("task-list") ? list : null;
     if (list?.classList.contains("task-list")) {
       list.classList.add(list === dragSourceList ? "reorder-list-target" : "drop-list-target");
     }
@@ -124,7 +129,11 @@ export function createTaskDragController({
 
   function updatePendingDropFromPointer(pointerEvent) {
     const list = taskListNearPointer(pointerEvent?.clientX, pointerEvent?.clientY);
-    if (!list) return;
+    if (!list) {
+      pendingDropList = null;
+      clearDropTargets();
+      return;
+    }
 
     markDropTarget(list);
     pendingDropList = list === dragSourceList ? null : list;

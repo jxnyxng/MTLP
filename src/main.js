@@ -446,6 +446,7 @@ async function loadAndRender() {
   }
 
   document.body.classList.toggle("is-editing", state.isEditing);
+  document.body.classList.toggle("is-locked", state.isLocked);
   renderTabs();
   renderViewActions({ closeSidePanel, openSidePanel });
   renderPeriodNav();
