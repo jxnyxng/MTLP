@@ -65,6 +65,24 @@ export function createPanelRenderer({
   function stagingKey(periodType, targetDate) {
     return `${periodType}:${targetDate}`;
   }
+
+  function groupTasksByTargetDate(tasks) {
+    return tasks.reduce((groups, task) => {
+      const targetDate = task.target_date;
+      if (!groups.has(targetDate)) groups.set(targetDate, []);
+      groups.get(targetDate).push(task);
+      return groups;
+    }, new Map());
+  }
+
+  function groupTasksByTimeBlock(tasks) {
+    return tasks.reduce((groups, task) => {
+      const timeBlock = task.time_block || null;
+      if (!groups.has(timeBlock)) groups.set(timeBlock, []);
+      groups.get(timeBlock).push(task);
+      return groups;
+    }, new Map());
+  }
   
   function createStagingHeading(card, periodType, targetDate, label, extra = null) {
     const key = stagingKey(periodType, targetDate);
@@ -153,6 +171,7 @@ export function createPanelRenderer({
   
     const grid = document.createElement("div");
     grid.className = "year-grid";
+    const yearlyTasksByTarget = groupTasksByTargetDate(data.futureYearTasks);
   
     for (const year of futureYears(anchorDate)) {
       const card = document.createElement("section");
@@ -179,7 +198,7 @@ export function createPanelRenderer({
       renderTaskList(
         list,
         "YEARLY",
-        data.futureYearTasks.filter((task) => task.target_date === list.dataset.targetDate),
+        yearlyTasksByTarget.get(list.dataset.targetDate) ?? [],
         `${year} 목표`,
       );
   
@@ -210,6 +229,7 @@ export function createPanelRenderer({
     const grid = document.createElement("div");
     grid.className = "month-grid";
     const year = anchorDate.getFullYear();
+    const monthlyTasksByTarget = groupTasksByTargetDate(data.yearlyMonthTasks);
   
     for (let index = 0; index < 12; index += 1) {
       const card = document.createElement("section");
@@ -236,7 +256,7 @@ export function createPanelRenderer({
       renderTaskList(
         list,
         "MONTHLY",
-        data.yearlyMonthTasks.filter((task) => task.target_date === list.dataset.targetDate),
+        monthlyTasksByTarget.get(list.dataset.targetDate) ?? [],
         `${index + 1}월 할 일 입력 후 Enter`,
       );
   
@@ -266,6 +286,9 @@ export function createPanelRenderer({
   
     const weekList = document.createElement("div");
     weekList.className = "month-week-list";
+    const dailyTasksByTarget = groupTasksByTargetDate(
+      data.monthDailyTasks.filter((task) => !task.time_block),
+    );
   
     monthWeeks(anchorDate).forEach((week, index) => {
       const section = document.createElement("section");
@@ -323,7 +346,7 @@ export function createPanelRenderer({
           renderTaskList(
             list,
             "DAILY",
-            data.monthDailyTasks.filter((task) => task.target_date === targetDate && !task.time_block),
+            dailyTasksByTarget.get(targetDate) ?? [],
             "Plan this day",
           );
   
@@ -351,6 +374,9 @@ export function createPanelRenderer({
     const wrap = document.createElement("div");
     wrap.className = "weekly-board";
     const now = new Date();
+    const dailyTasksByTarget = groupTasksByTargetDate(
+      data.weekDailyTasks.filter((task) => !task.time_block),
+    );
   
     const createWeekDayCard = (date) => {
       const targetDate = toDateKey(date);
@@ -380,7 +406,7 @@ export function createPanelRenderer({
       renderTaskList(
         list,
         "DAILY",
-        data.weekDailyTasks.filter((task) => task.target_date === targetDate && !task.time_block),
+        dailyTasksByTarget.get(targetDate) ?? [],
         "Daily plan",
       );
   
@@ -485,9 +511,10 @@ export function createPanelRenderer({
     const isToday = isCurrentDate(anchorDate, now);
   
     const dayTarget = targetFor("DAILY", anchorDate);
+    const dailyTasksByTimeBlock = groupTasksByTimeBlock(data.tasks.DAILY);
     const today = createTodoSummary(
       "DAILY",
-      data.tasks.DAILY.filter((task) => !task.time_block),
+      dailyTasksByTimeBlock.get(null) ?? [],
       "Daily task",
       dayTarget,
     );
@@ -528,12 +555,12 @@ export function createPanelRenderer({
       const list = document.createElement("ul");
       list.className = "task-list compact";
       list.dataset.periodType = "DAILY";
-      list.dataset.targetDate = targetFor("DAILY", anchorDate);
+      list.dataset.targetDate = dayTarget;
       list.dataset.timeBlock = hour;
       renderTaskList(
         list,
         "DAILY",
-        data.tasks.DAILY.filter((task) => task.time_block === hour),
+        dailyTasksByTimeBlock.get(hour) ?? [],
         "이 칸에 입력 후 Enter",
       );
   

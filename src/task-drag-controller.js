@@ -38,20 +38,40 @@ export function createTaskDragController({
     );
   }
 
+  function sameOptionalValue(current, next) {
+    return (current ?? null) === (next ?? null);
+  }
+
+  function shouldSaveTaskPosition(item, target, position) {
+    return (
+      item.dataset.periodType !== target.periodType ||
+      item.dataset.targetDate !== target.targetDate ||
+      !sameOptionalValue(item.dataset.timeBlock, target.timeBlock) ||
+      !sameOptionalValue(item.dataset.splitLane, target.splitLane) ||
+      Number(item.dataset.position) !== position
+    );
+  }
+
   async function saveListOrder(list) {
     if (!list?.classList.contains("task-list")) return;
 
     const target = dropTargetFor(list);
-    const updates = taskItemsFor(list).map((item, index) =>
-      moveTask(
-        Number(item.dataset.id),
-        target.periodType,
-        target.targetDate,
-        (index + 1) * POSITION_STEP,
-        target.timeBlock,
-        target.splitLane,
-      ),
-    );
+    const updates = taskItemsFor(list)
+      .map((item, index) => ({
+        item,
+        position: (index + 1) * POSITION_STEP,
+      }))
+      .filter(({ item, position }) => shouldSaveTaskPosition(item, target, position))
+      .map(({ item, position }) =>
+        moveTask(
+          Number(item.dataset.id),
+          target.periodType,
+          target.targetDate,
+          position,
+          target.timeBlock,
+          target.splitLane,
+        ),
+      );
 
     await Promise.all(updates);
   }

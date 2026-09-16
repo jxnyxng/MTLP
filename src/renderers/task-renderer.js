@@ -19,6 +19,10 @@ export function createTaskRenderer({
     item.dataset.content = task.content;
     item.dataset.status = task.status;
     item.dataset.periodType = task.period_type;
+    item.dataset.targetDate = task.target_date;
+    if (task.time_block !== null && task.time_block !== undefined) {
+      item.dataset.timeBlock = task.time_block;
+    }
     if (task.split_lane !== null && task.split_lane !== undefined) {
       item.dataset.splitLane = task.split_lane;
     }

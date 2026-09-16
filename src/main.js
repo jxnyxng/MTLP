@@ -47,6 +47,20 @@ import {
 } from "./db.js";
 
 const app = document.querySelector("#app");
+const legacyThemeIds = {
+  productivity: "sage-graphite-light",
+  "productivity-light": "sage-graphite-light",
+  diary: "mist-blue-light",
+  "diary-light": "mist-blue-light",
+  study: "ink-lavender-light",
+  "study-light": "ink-lavender-light",
+  minimal: "sage-graphite-light",
+  "minimal-light": "sage-graphite-light",
+  "productivity-dark": "graphite-blue-dark",
+  "diary-dark": "forest-ink-dark",
+  "study-dark": "graphite-blue-dark",
+  "minimal-dark": "graphite-blue-dark",
+};
 let renderVersion = 0;
 let renderJournalActions;
 let renderJournalPanel;
@@ -71,20 +85,6 @@ let renderViewHeading;
 let bindSortables;
 
 function themeById(themeId) {
-  const legacyThemeIds = {
-    productivity: "sage-graphite-light",
-    "productivity-light": "sage-graphite-light",
-    diary: "mist-blue-light",
-    "diary-light": "mist-blue-light",
-    study: "ink-lavender-light",
-    "study-light": "ink-lavender-light",
-    minimal: "sage-graphite-light",
-    "minimal-light": "sage-graphite-light",
-    "productivity-dark": "graphite-blue-dark",
-    "diary-dark": "forest-ink-dark",
-    "study-dark": "graphite-blue-dark",
-    "minimal-dark": "graphite-blue-dark",
-  };
   const normalizedThemeId = legacyThemeIds[themeId] ?? themeId;
   return themes.find((theme) => theme.id === normalizedThemeId) ?? themes[0];
 }
@@ -201,14 +201,7 @@ function parseDateInput(periodType, value) {
 }
 
 function shiftDate(periodType, amount) {
-  const next = new Date(state.anchorDate);
-  if (periodType === "FUTURE") next.setFullYear(next.getFullYear() + amount * 10);
-  if (periodType === "YEARLY") next.setFullYear(next.getFullYear() + amount);
-  if (periodType === "MONTHLY") next.setMonth(next.getMonth() + amount);
-  if (periodType === "WEEKLY") next.setDate(next.getDate() + amount * 7);
-  if (periodType === "JOURNAL") next.setDate(next.getDate() + amount);
-  if (periodType === "DAILY") next.setDate(next.getDate() + amount);
-  state.anchorDate = next;
+  state.anchorDate = shiftedPeriodDate(periodType, amount);
   state.shouldAnimatePeriod = true;
 }
 
