@@ -581,7 +581,9 @@ export function createPanelRenderer({
   async function openDetailModal(periodType, anchorDate) {
     if (periodType === state.activeTab && periodType === "DAILY") return;
     state.detailModal = { periodType, anchorDate: new Date(anchorDate) };
+    const detail = state.detailModal;
     await loadAndRender();
+    if (state.detailModal !== detail) return;
     document.querySelector("#detail-modal").showModal();
   }
   
@@ -592,7 +594,7 @@ export function createPanelRenderer({
     document.querySelector("#detail-view").replaceChildren();
   }
   
-  async function renderDetailModal() {
+  async function renderDetailModal(isCurrent = () => true) {
     const modal = document.querySelector("#detail-modal");
     const detailView = document.querySelector("#detail-view");
   
@@ -602,8 +604,10 @@ export function createPanelRenderer({
       return;
     }
   
-    const { periodType, anchorDate } = state.detailModal;
+    const detail = state.detailModal;
+    const { periodType, anchorDate } = detail;
     const data = await loadTaskData(anchorDate);
+    if (state.detailModal !== detail || !isCurrent()) return;
     document.querySelector(".detail-modal").className =
       `detail-modal detail-modal-${periodType.toLowerCase()}`;
     document.querySelector("#detail-title").textContent = titleFor(periodType);

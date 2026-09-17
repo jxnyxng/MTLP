@@ -10,6 +10,8 @@ export function createTaskDataService({
   toDateKey,
   weekDates,
 }) {
+  let loadVersion = 0;
+
   function legacyMondayTargetForWeek(anchorDate) {
     const sunday = weekDates(anchorDate)[0];
     const monday = new Date(sunday);
@@ -82,7 +84,12 @@ export function createTaskDataService({
   async function loadTasks() {
     if (!state.dbReady) return;
 
-    const data = await loadTaskData(state.anchorDate);
+    const currentLoad = ++loadVersion;
+    const anchorDate = new Date(state.anchorDate);
+    const data = await loadTaskData(anchorDate);
+    if (currentLoad !== loadVersion || anchorDate.getTime() !== state.anchorDate.getTime()) {
+      return;
+    }
 
     state.tasks.YEARLY = data.tasks.YEARLY;
     state.tasks.MONTHLY = data.tasks.MONTHLY;
@@ -94,7 +101,7 @@ export function createTaskDataService({
     state.monthDailyTasks = data.monthDailyTasks;
     state.weekDailyTasks = data.weekDailyTasks;
     state.journalEntries = data.journalEntries;
-    state.timelineRanges[targetFor("DAILY", state.anchorDate)] = data.timelineRange;
+    state.timelineRanges[targetFor("DAILY", anchorDate)] = data.timelineRange;
   }
 
   return {

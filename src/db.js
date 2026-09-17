@@ -3,6 +3,7 @@ import Database from "@tauri-apps/plugin-sql";
 const DB_PATH = "sqlite:bujo.db";
 
 let db;
+let initialization;
 
 async function ensureColumn(database, tableName, columnName, definition) {
   const columns = await database.select(`PRAGMA table_info(${tableName})`);
@@ -14,10 +15,19 @@ async function ensureColumn(database, tableName, columnName, definition) {
 
 export async function initDb() {
   if (db) return db;
+  if (!initialization) {
+    initialization = initializeDb().catch((error) => {
+      initialization = null;
+      throw error;
+    });
+  }
+  return initialization;
+}
 
-  db = await Database.load(DB_PATH);
+async function initializeDb() {
+  const database = await Database.load(DB_PATH);
 
-  await db.execute(`
+  await database.execute(`
     CREATE TABLE IF NOT EXISTS tasks (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       content TEXT NOT NULL,
@@ -31,18 +41,18 @@ export async function initDb() {
     )
   `);
 
-  await ensureColumn(db, "tasks", "time_block", "time_block TEXT DEFAULT NULL");
-  await ensureColumn(db, "tasks", "position", "position INTEGER NOT NULL DEFAULT 1000");
-  await ensureColumn(db, "tasks", "split_lane", "split_lane INTEGER DEFAULT NULL");
+  await ensureColumn(database, "tasks", "time_block", "time_block TEXT DEFAULT NULL");
+  await ensureColumn(database, "tasks", "position", "position INTEGER NOT NULL DEFAULT 1000");
+  await ensureColumn(database, "tasks", "split_lane", "split_lane INTEGER DEFAULT NULL");
 
-  await db.execute(`
+  await database.execute(`
     CREATE TABLE IF NOT EXISTS settings (
       key TEXT PRIMARY KEY,
       value TEXT NOT NULL
     )
   `);
 
-  await db.execute(`
+  await database.execute(`
     CREATE TABLE IF NOT EXISTS journal_entries (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       target_date TEXT NOT NULL,
@@ -53,7 +63,8 @@ export async function initDb() {
     )
   `);
 
-  return db;
+  db = database;
+  return database;
 }
 
 export async function getTasks(periodType, targetDate) {
@@ -143,6 +154,25 @@ export async function moveTask(
   );
 }
 
+export async function saveTaskOrder(target, updates) {
+  if (!updates.length) return;
+  const database = await initDb();
+  const order = JSON.stringify(updates);
+  // One UPDATE keeps a failed reorder from leaving only part of the list saved.
+  return database.execute(
+    `UPDATE tasks
+        SET period_type = ?, target_date = ?, time_block = ?, split_lane = ?,
+            position = (
+              SELECT json_extract(value, '$.position')
+                FROM json_each(?)
+               WHERE json_extract(value, '$.id') = tasks.id
+            )
+      WHERE id IN (SELECT json_extract(value, '$.id') FROM json_each(?))`,
+    [target.periodType, target.targetDate, target.timeBlock ?? null,
+      target.splitLane ?? null, order, order],
+  );
+}
+
 export async function saveApiKey(apiKey) {
   return saveSetting("gemini_api_key", apiKey);
 }
@@ -183,12 +213,12 @@ export async function getAllJournalEntries() {
   );
 }
 
-export async function addJournalEntry(targetDate, position = 1000) {
+export async function addJournalEntry(targetDate, position = 1000, content = "") {
   const database = await initDb();
   const result = await database.execute(
-    `INSERT INTO journal_entries (target_date, position)
-     VALUES (?, ?)`,
-    [targetDate, position],
+    `INSERT INTO journal_entries (target_date, position, content)
+     VALUES (?, ?, ?)`,
+    [targetDate, position, content],
   );
 
   return result.lastInsertId;

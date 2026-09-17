@@ -1,9 +1,11 @@
 import Sortable from "sortablejs";
+import { calculateAppendPosition, POSITION_STEP } from "./task-layout.js";
 
 export function createTaskDragController({
   state,
   addTask,
   moveTask,
+  saveTaskOrder,
   setStatus,
   loadAndRender,
 }) {
@@ -11,9 +13,9 @@ export function createTaskDragController({
   let pendingDropList = null;
   let dragPointerListener = null;
   let activeDropList = null;
+  const sortables = new Map();
 
   const DROP_PROXIMITY = 18;
-  const POSITION_STEP = 1000;
 
   function dropTargetFor(list) {
     return {
@@ -22,14 +24,6 @@ export function createTaskDragController({
       timeBlock: list.dataset.timeBlock ?? null,
       splitLane: list.dataset.splitLane ?? null,
     };
-  }
-
-  function calculateAppendPosition(list) {
-    const positions = Array.from(list.children)
-      .filter((child) => child.classList.contains("task-item"))
-      .map((child) => Number(child.dataset.position) || 0);
-    if (!positions.length) return POSITION_STEP;
-    return Math.max(...positions) + POSITION_STEP;
   }
 
   function taskItemsFor(list) {
@@ -62,18 +56,9 @@ export function createTaskDragController({
         position: (index + 1) * POSITION_STEP,
       }))
       .filter(({ item, position }) => shouldSaveTaskPosition(item, target, position))
-      .map(({ item, position }) =>
-        moveTask(
-          Number(item.dataset.id),
-          target.periodType,
-          target.targetDate,
-          position,
-          target.timeBlock,
-          target.splitLane,
-        ),
-      );
+      .map(({ item, position }) => ({ id: Number(item.dataset.id), position }));
 
-    await Promise.all(updates);
+    await saveTaskOrder(target, updates);
   }
 
   function clearDropTargets({ resetDrag = false } = {}) {
@@ -213,11 +198,18 @@ export function createTaskDragController({
     return event.from === event.to && event.oldDraggableIndex === event.newDraggableIndex;
   }
 
+  function destroySortables() {
+    sortables.forEach((sortable) => sortable.destroy());
+    sortables.clear();
+    clearDropTargets({ resetDrag: true });
+  }
+
   function bindSortables() {
     if (state.isLocked) return;
 
     document.querySelectorAll(".task-list").forEach((list) => {
-      Sortable.create(list, {
+      if (sortables.has(list)) return;
+      const sortable = Sortable.create(list, {
         group: {
           name: "shared-tasks",
           pull(to, from) {
@@ -295,10 +287,12 @@ export function createTaskDragController({
           await saveDroppedTask(event);
         },
       });
+      sortables.set(list, sortable);
     });
   }
 
   return {
     bindSortables,
+    destroySortables,
   };
 }

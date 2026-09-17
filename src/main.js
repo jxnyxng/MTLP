@@ -16,6 +16,7 @@ import {
   weekdayLabel,
 } from "./date-utils.js";
 import { state } from "./state.js";
+import { calculateAppendPosition, getNextPosition } from "./task-layout.js";
 import { createJournalRenderer } from "./renderers/journal-renderer.js";
 import { createPanelRenderer } from "./renderers/panel-renderer.js";
 import { createSettingsRenderer } from "./renderers/settings-renderer.js";
@@ -40,6 +41,7 @@ import {
   saveApiKey,
   saveThemeId,
   saveTimelineRange,
+  saveTaskOrder,
   updateTaskBlock,
   updateTaskContent,
   updateTaskStatus,
@@ -83,6 +85,7 @@ let renderTabs;
 let renderViewActions;
 let renderViewHeading;
 let bindSortables;
+let destroySortables;
 
 function themeById(themeId) {
   const normalizedThemeId = legacyThemeIds[themeId] ?? themeId;
@@ -205,11 +208,6 @@ function shiftDate(periodType, amount) {
   state.shouldAnimatePeriod = true;
 }
 
-function getNextPosition(items) {
-  if (!items.length) return 1000;
-  return Math.max(...items.map((item) => Number(item.position) || 0)) + 1000;
-}
-
 function taskBlockFromItem(item) {
   if (!item?.classList.contains("task-item")) return null;
   return {
@@ -329,14 +327,6 @@ async function addBlankTask(
   }
 }
 
-function calculateAppendPosition(list) {
-  const positions = Array.from(list.children)
-    .filter((child) => child.classList.contains("task-item"))
-    .map((child) => Number(child.dataset.position) || 0);
-  if (!positions.length) return 1000;
-  return Math.max(...positions) + 1000;
-}
-
 async function copySelectedTaskBlock() {
   const item = selectedTaskItem();
   const task = taskBlockFromItem(item);
@@ -432,6 +422,7 @@ async function loadAndRender() {
   const currentRender = ++renderVersion;
   await loadTasks();
   if (currentRender !== renderVersion) return;
+  destroySortables();
 
   if (state.sideTab === state.activeTab || state.sideTab === "JOURNAL") {
     state.sideTab = null;
@@ -455,7 +446,8 @@ async function loadAndRender() {
   view.classList.toggle("side-panel-open", state.sidePanelOpen);
   view.replaceChildren(...panels);
 
-  await renderDetailModal();
+  await renderDetailModal(() => currentRender === renderVersion);
+  if (currentRender !== renderVersion) return;
   bindSortables();
 }
 
@@ -511,10 +503,11 @@ async function saveSettings() {
   targetFor,
 }));
 
-({ bindSortables } = createTaskDragController({
+({ bindSortables, destroySortables } = createTaskDragController({
   state,
   addTask,
   moveTask,
+  saveTaskOrder,
   setStatus,
   loadAndRender,
 }));

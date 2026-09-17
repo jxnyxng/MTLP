@@ -1,3 +1,5 @@
+import { splitTasksIntoLanes } from "../task-layout.js";
+
 export function createTaskRenderer({
   state,
   deleteTask,
@@ -288,11 +290,7 @@ export function createTaskRenderer({
     const stack = document.createElement("div");
     stack.className = "split-task-stack";
 
-    const fallbackLaneById = new Map(
-      tasks
-        .filter((task) => task.split_lane === null || task.split_lane === undefined)
-        .map((task, index) => [Number(task.id), index % 2]),
-    );
+    const laneTasks = splitTasksIntoLanes(tasks);
   
     const lists = [0, 1].map((lane) => {
       const list = document.createElement("ul");
@@ -303,11 +301,7 @@ export function createTaskRenderer({
       renderTaskList(
         list,
         periodType,
-        tasks.filter((task) => {
-          const savedLane = Number(task.split_lane);
-          if (savedLane === 0 || savedLane === 1) return savedLane === lane;
-          return fallbackLaneById.get(Number(task.id)) === lane;
-        }),
+        laneTasks[lane],
         placeholder,
       );
       return list;

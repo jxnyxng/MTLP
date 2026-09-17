@@ -36,11 +36,13 @@ export function appendJournalMarkdownBlocks(parent, body) {
       return;
     }
 
-    const headingMatch = /^(#{1,3})\s+(.+)$/.exec(trimmed);
+    const headingMatch = /^(#{1,4})\s+(.+)$/.exec(trimmed);
     if (headingMatch) {
       closeList();
-      const level = String(Math.min(headingMatch[1].length + 1, 4));
+      const level = String(Math.max(headingMatch[1].length, 2));
       const node = document.createElement(`h${level}`);
+      // Legacy single-# headings keep their existing H2 appearance and syntax.
+      if (headingMatch[1] === "#") node.dataset.legacyHeading = "true";
       appendInlineMarkdown(node, headingMatch[2]);
       parent.append(node);
       return;
@@ -90,7 +92,7 @@ function blockMarkdownFromNode(node) {
 
   const text = Array.from(node.childNodes).map(inlineMarkdownFromNode).join("").trim();
   if (!text && node.tagName !== "BR") return "";
-  if (node.tagName === "H2") return `## ${text}`;
+  if (node.tagName === "H2") return `${node.dataset.legacyHeading === "true" ? "#" : "##"} ${text}`;
   if (node.tagName === "H3") return `### ${text}`;
   if (node.tagName === "H4") return `#### ${text}`;
   if (node.tagName === "BLOCKQUOTE") return `> ${text}`;
