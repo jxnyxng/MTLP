@@ -1,7 +1,16 @@
+import {
+  targetFor as periodTargetFor,
+  titleFor,
+  shiftedPeriodDate as shiftPeriodDate,
+  periodLabel,
+  inputTypeFor,
+  dateInputValue as periodInputValue,
+  parseDateInput as parsePeriodInput,
+} from "./period-utils.js";
+import { refreshAfterTaskSave } from "./services/task-mutation-service.js";
 import "./styles.css";
 import { DEFAULT_TIMELINE_RANGE, tabs, themes, timelineHourOptions } from "./config.js";
 import {
-  decadeStartYear,
   futureYears,
   hourValue,
   hoursForRange,
@@ -9,11 +18,8 @@ import {
   isCurrentHourBlock,
   monthWeeks,
   toDateKey,
-  toMonthKey,
   toWeekStartDate,
-  toYearKey,
   weekDates,
-  weekdayLabel,
 } from "./date-utils.js";
 import { state } from "./state.js";
 import { calculateAppendPosition, getNextPosition } from "./task-layout.js";
@@ -110,12 +116,7 @@ function normalizeTimelineRange(range) {
 }
 
 function targetFor(periodType, date = state.anchorDate) {
-  if (periodType === "FUTURE") return String(decadeStartYear(date));
-  if (periodType === "YEARLY") return toYearKey(date);
-  if (periodType === "MONTHLY") return toMonthKey(date);
-  if (periodType === "WEEKLY") return toDateKey(toWeekStartDate(date));
-  if (periodType === "JOURNAL") return toDateKey(date);
-  return toDateKey(date);
+  return periodTargetFor(periodType, date);
 }
 
 function timelineRangeFor(date, data = state) {
@@ -123,83 +124,18 @@ function timelineRangeFor(date, data = state) {
   return normalizeTimelineRange(data.timelineRange ?? state.timelineRanges[targetDate]);
 }
 
-function titleFor(periodType) {
-  if (periodType === "FUTURE") return "Long-term Plan";
-  if (periodType === "YEARLY") return "Yearly Log";
-  if (periodType === "MONTHLY") return "Monthly Log";
-  if (periodType === "WEEKLY") return "Weekly Log";
-  if (periodType === "JOURNAL") return "Journal";
-  return "Daily Log";
-}
-
 function shiftedPeriodDate(periodType, amount) {
-  const next = new Date(state.anchorDate);
-  if (periodType === "FUTURE") next.setFullYear(next.getFullYear() + amount * 10);
-  if (periodType === "YEARLY") next.setFullYear(next.getFullYear() + amount);
-  if (periodType === "MONTHLY") next.setMonth(next.getMonth() + amount);
-  if (periodType === "WEEKLY") next.setDate(next.getDate() + amount * 7);
-  if (periodType === "JOURNAL") next.setDate(next.getDate() + amount);
-  if (periodType === "DAILY") next.setDate(next.getDate() + amount);
-  return next;
-}
-
-function periodLabel(periodType, date) {
-  if (periodType === "FUTURE") {
-    const years = futureYears(date);
-    return `${years[0]} - ${years.at(-1)}`;
-  }
-  if (periodType === "YEARLY") return `${date.getFullYear()}년`;
-  if (periodType === "MONTHLY") {
-    return `${date.getFullYear()}년 ${date.getMonth() + 1}월`;
-  }
-  if (periodType === "WEEKLY") {
-    const start = toWeekStartDate(date);
-    const end = new Date(start);
-    end.setDate(start.getDate() + 6);
-    return `${start.getMonth() + 1}/${start.getDate()} - ${end.getMonth() + 1}/${end.getDate()}`;
-  }
-  if (periodType === "JOURNAL") return `${date.getMonth() + 1}월 ${date.getDate()}일 ${weekdayLabel(date)}`;
-  return `${date.getMonth() + 1}월 ${date.getDate()}일 ${weekdayLabel(date)}`;
-}
-
-function inputTypeFor(periodType) {
-  if (periodType === "FUTURE") return "number";
-  if (periodType === "YEARLY") return "number";
-  if (periodType === "MONTHLY") return "month";
-  return "date";
+  return shiftPeriodDate(periodType, amount, state.anchorDate);
 }
 
 function dateInputValue(periodType) {
-  if (periodType === "FUTURE") return targetFor("FUTURE");
-  if (periodType === "YEARLY") return targetFor("YEARLY");
-  if (periodType === "MONTHLY") return targetFor("MONTHLY");
-  return toDateKey(state.anchorDate);
+  return periodInputValue(periodType, state.anchorDate);
 }
 
 function parseDateInput(periodType, value) {
-  if (!value) return;
-
-  if (periodType === "YEARLY") {
-    state.anchorDate = new Date(Number(value), 0, 1);
-    state.shouldAnimatePeriod = true;
-    return;
-  }
-
-  if (periodType === "FUTURE") {
-    state.anchorDate = new Date(Number(value), 0, 1);
-    state.shouldAnimatePeriod = true;
-    return;
-  }
-
-  if (periodType === "MONTHLY") {
-    const [year, month] = value.split("-").map(Number);
-    state.anchorDate = new Date(year, month - 1, 1);
-    state.shouldAnimatePeriod = true;
-    return;
-  }
-
-  const [year, month, day] = value.split("-").map(Number);
-  state.anchorDate = new Date(year, month - 1, day);
+  const date = parsePeriodInput(periodType, value);
+  if (!date) return;
+  state.anchorDate = date;
   state.shouldAnimatePeriod = true;
 }
 
@@ -257,6 +193,20 @@ function tasksFor(periodType, timeBlock = null, targetDate = targetFor(periodTyp
   });
 }
 
+async function createTaskFromTrigger(trigger, content, periodType, timeBlock, targetDate) {
+  const sourceList = trigger.closest(".task-list");
+  return addTask(
+    content,
+    periodType,
+    targetDate,
+    sourceList
+      ? calculateAppendPosition(sourceList)
+      : getNextPosition(tasksFor(periodType, timeBlock, targetDate)),
+    timeBlock,
+    sourceList?.dataset.splitLane ?? null,
+  );
+}
+
 async function addTaskFromInput(
   input,
   periodType,
@@ -272,21 +222,10 @@ async function addTaskFromInput(
   }
 
   try {
-    const sourceList = input.closest(".task-list");
-    const splitLane = sourceList?.dataset.splitLane ?? null;
-    await addTask(
-      content,
-      periodType,
-      targetDate,
-      sourceList
-        ? calculateAppendPosition(sourceList)
-        : getNextPosition(tasksFor(periodType, timeBlock, targetDate)),
-      timeBlock,
-      splitLane,
-    );
+    await createTaskFromTrigger(input, content, periodType, timeBlock, targetDate);
     input.value = "";
     setStatus("저장 완료");
-    await loadAndRender();
+    await refreshAfterTaskSave({ loadAndRender, setStatus });
   } catch (error) {
     console.error(error);
     setStatus("저장 실패");
@@ -305,22 +244,11 @@ async function addBlankTask(
   }
 
   try {
-    const sourceList = trigger.closest(".task-list");
-    const splitLane = sourceList?.dataset.splitLane ?? null;
-    const id = await addTask(
-      "",
-      periodType,
-      targetDate,
-      sourceList
-        ? calculateAppendPosition(sourceList)
-        : getNextPosition(tasksFor(periodType, timeBlock, targetDate)),
-      timeBlock,
-      splitLane,
-    );
+    const id = await createTaskFromTrigger(trigger, "", periodType, timeBlock, targetDate);
     state.selectedTaskId = null;
     state.pendingEditTaskId = id;
     setStatus("빈 블록 생성 완료");
-    await loadAndRender();
+    await refreshAfterTaskSave({ loadAndRender, setStatus });
   } catch (error) {
     console.error(error);
     setStatus("빈 블록 생성 실패");
@@ -365,7 +293,7 @@ async function pasteSelectedTaskBlock() {
       state.copiedTaskBlock.status,
     );
     setStatus("블록 대체 완료");
-    await loadAndRender();
+    await refreshAfterTaskSave({ loadAndRender, setStatus });
   } catch (error) {
     console.error(error);
     setStatus("블록 대체 실패");

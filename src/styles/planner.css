@@ -21,19 +21,19 @@
   --planner-period-task-list-padding: 3px;
   --planner-list-min-height: 26px;
   --planner-list-padding: 4px 5px 6px;
-  --planner-task-row-columns: 16px minmax(0, 1fr) 20px;
-  --planner-task-row-gap: 4px;
-  --planner-task-row-min-height: 22px;
-  --planner-task-row-padding: 1px 2px;
+  --planner-task-row-columns: 20px minmax(0, 1fr) 24px;
+  --planner-task-row-gap: 6px;
+  --planner-task-row-min-height: 32px;
+  --planner-task-row-padding: 2px 5px;
   --planner-read-task-row-columns: 17px minmax(0, 1fr);
-  --planner-task-icon-width: 16px;
-  --planner-task-icon-font-size: 12px;
-  --planner-task-font-size: 12px;
-  --planner-task-line-height: 1.25;
-  --planner-task-control-size: 18px;
+  --planner-task-icon-width: 20px;
+  --planner-task-icon-font-size: 14px;
+  --planner-task-font-size: 14px;
+  --planner-task-line-height: 1.4;
+  --planner-task-control-size: 24px;
   --planner-add-task-font-size: 14px;
   --planner-overview-padding: 5px;
-  --planner-overview-content-max-height: 104px;
+  --planner-overview-content-max-height: 144px;
   --planner-summary-heading-min-height: 24px;
   --planner-summary-heading-padding: 4px 7px 3px;
   --planner-summary-heading-font-size: 11px;
@@ -62,18 +62,18 @@
   --planner-period-task-list-padding: 2px;
   --planner-list-min-height: 22px;
   --planner-list-padding: 2px;
-  --planner-task-row-columns: 14px minmax(0, 1fr) 18px;
-  --planner-task-row-gap: 2px;
-  --planner-task-row-min-height: 19px;
-  --planner-task-row-padding: 0 1px;
+  --planner-task-row-columns: 18px minmax(0, 1fr) 22px;
+  --planner-task-row-gap: 4px;
+  --planner-task-row-min-height: 28px;
+  --planner-task-row-padding: 2px 4px;
   --planner-read-task-row-columns: 15px minmax(0, 1fr);
-  --planner-task-icon-width: 14px;
-  --planner-task-icon-font-size: 11px;
-  --planner-task-font-size: 11px;
-  --planner-task-line-height: 1.18;
-  --planner-task-control-size: 16px;
+  --planner-task-icon-width: 18px;
+  --planner-task-icon-font-size: 13px;
+  --planner-task-font-size: 13px;
+  --planner-task-line-height: 1.35;
+  --planner-task-control-size: 22px;
   --planner-overview-padding: 4px;
-  --planner-overview-content-max-height: 84px;
+  --planner-overview-content-max-height: 128px;
   --planner-summary-heading-min-height: 22px;
   --planner-summary-heading-padding: 3px 6px;
   --planner-summary-heading-font-size: 10px;
@@ -82,7 +82,7 @@
 .task-list {
   display: grid;
   align-content: start;
-  gap: 1px;
+  gap: 4px;
   min-height: var(--planner-list-min-height);
   margin: 0;
   padding: var(--planner-list-padding);
@@ -313,11 +313,17 @@
 }
 
 .period-overview .split-task-list {
+  gap: 5px;
   max-height: var(--planner-overview-content-max-height);
   min-height: 0;
   overflow: auto;
   overscroll-behavior: contain;
   scrollbar-width: none;
+}
+
+.period-overview .split-task-list,
+.period-journal-list {
+  padding: 6px 8px;
 }
 
 .period-overview .split-task-list::-webkit-scrollbar {
@@ -369,10 +375,9 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   align-content: start;
-  gap: 4px;
-  max-height: 118px;
+  gap: 1px 16px;
+  max-height: var(--planner-overview-content-max-height);
   min-height: 0;
-  padding: 0;
   overflow: auto;
   overscroll-behavior: contain;
   scrollbar-width: none;
@@ -387,10 +392,10 @@
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   column-gap: 6px;
-  min-height: 26px;
+  min-height: var(--planner-task-row-min-height);
   border: 1px solid color-mix(in srgb, var(--color-border), transparent 26%);
   border-radius: var(--task-block-radius);
-  padding: 3px 5px;
+  padding: var(--planner-task-row-padding);
   background: color-mix(in srgb, var(--color-surface), var(--color-bg) 8%);
   color: var(--color-text);
   box-shadow: var(--shadow-panel);
@@ -407,9 +412,9 @@
 .period-journal-item strong {
   min-width: 0;
   overflow: hidden;
-  font-size: 12px;
+  font-size: var(--planner-task-font-size);
   font-weight: 650;
-  line-height: 1.25;
+  line-height: var(--planner-task-line-height);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -838,7 +843,7 @@
 }
 
 .month-week-section .task-list {
-  gap: 0;
+  gap: 4px;
   padding: 2px;
 }
 
@@ -846,14 +851,14 @@
 .month-week-section .entry-row,
 .month-week-section .add-task-row,
 .month-week-section .empty-read-row {
-  gap: 2px;
-  min-height: 20px;
-  padding: 0 1px;
+  gap: var(--planner-task-row-gap);
+  min-height: var(--planner-task-row-min-height);
+  padding: var(--planner-task-row-padding);
 }
 
 .month-week-section .task-content {
-  font-size: 11px;
-  line-height: 1.2;
+  font-size: var(--planner-task-font-size);
+  line-height: var(--planner-task-line-height);
 }
 
 .task-item {
@@ -895,12 +900,10 @@
   display: grid;
   grid-column: 1;
   grid-row: 1;
-  grid-template-columns: repeat(2, 3px);
-  grid-template-rows: repeat(3, 3px);
-  gap: 2px;
-  place-content: center;
+  grid-template-columns: 1fr;
+  place-items: center;
   width: var(--planner-task-icon-width);
-  min-height: var(--planner-task-row-min-height);
+  min-height: 0;
   height: 100%;
   border: 0;
   padding: 0;
@@ -923,6 +926,7 @@
   height: 3px;
   border-radius: 50%;
   background: var(--color-subtle);
+  transform: translate(-2.5px, -5px);
   box-shadow:
     5px 0 var(--color-subtle),
     0 5px var(--color-subtle),
@@ -959,7 +963,7 @@
   align-self: center;
   place-items: center;
   width: var(--planner-task-icon-width);
-  min-height: var(--planner-task-row-min-height);
+  min-height: 0;
   color: var(--color-primary);
   font-size: var(--planner-task-icon-font-size);
   line-height: 1;
@@ -967,6 +971,9 @@
 }
 
 .task-content {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: center;
   min-width: 0;
   overflow: hidden;
   color: color-mix(in srgb, var(--color-text), var(--color-muted) 12%);
@@ -985,13 +992,16 @@
 }
 
 .task-edit-input {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: center;
   width: 100%;
   min-width: 0;
-  min-height: var(--planner-task-row-min-height);
+  min-height: 0;
   max-height: 132px;
   border: 0;
   border-radius: var(--task-block-radius);
-  padding: 3px 4px;
+  padding: 0;
   background: transparent;
   color: var(--color-text);
   cursor: text;
@@ -1017,12 +1027,15 @@
 
 .delete-button {
   display: grid;
+  grid-column: 3;
+  grid-row: 1;
   align-self: center;
   justify-self: center;
   place-items: center;
   width: var(--planner-task-control-size);
   height: var(--planner-task-control-size);
   border: 0;
+  padding: 0;
   border-radius: var(--task-block-radius);
   opacity: 0;
   background: transparent;
@@ -1135,11 +1148,11 @@ body.is-locked .add-task-row:focus-within {
 .entry-row textarea {
   grid-column: 1 / 4;
   width: 100%;
-  min-height: var(--planner-task-row-min-height);
+  min-height: 0;
   max-height: 132px;
   border: 0;
   border-radius: var(--task-block-radius);
-  padding: 3px 4px;
+  padding: 0;
   background: transparent;
   color: var(--color-text);
   outline: none;

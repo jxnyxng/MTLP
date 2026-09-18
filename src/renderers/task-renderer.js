@@ -1,3 +1,4 @@
+import { refreshAfterTaskSave } from "../services/task-mutation-service.js";
 import { splitTasksIntoLanes } from "../task-layout.js";
 
 export function createTaskRenderer({
@@ -64,7 +65,7 @@ export function createTaskRenderer({
           await deleteTask(task.id);
           if (state.selectedTaskId === Number(task.id)) state.selectedTaskId = null;
           setStatus("삭제 완료");
-          await loadAndRender();
+          await refreshAfterTaskSave({ loadAndRender, setStatus });
         } catch (error) {
           console.error(error);
           setStatus("삭제 실패");
@@ -78,7 +79,7 @@ export function createTaskRenderer({
         try {
           await updateTaskStatus(task.id, task.status === "DONE" ? "TODO" : "DONE");
           setStatus("상태 저장 완료");
-          await loadAndRender();
+          await refreshAfterTaskSave({ loadAndRender, setStatus });
         } catch (error) {
           console.error(error);
           setStatus("상태 저장 실패");
@@ -146,8 +147,15 @@ export function createTaskRenderer({
   
       try {
         await updateTaskContent(task.id, nextContent);
+        task.content = nextContent;
+        item.dataset.content = nextContent;
+        content.textContent = nextContent || "빈 블록";
+        input.replaceWith(content);
+        item.classList.remove("is-editing-task");
+        item.classList.toggle("is-empty-block", !nextContent);
+        deleteButton?.removeAttribute("disabled");
         setStatus("수정 완료");
-        await loadAndRender();
+        await refreshAfterTaskSave({ loadAndRender, setStatus });
       } catch (error) {
         console.error(error);
         setStatus("수정 실패");

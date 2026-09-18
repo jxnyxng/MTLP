@@ -156,6 +156,37 @@ export function createPanelRenderer({
     toDateKey,
   });
   
+  function createPeriodTaskCard({
+    cardClass,
+    currentClasses,
+    isCurrent,
+    label,
+    periodType,
+    anchorDate,
+    targetDate,
+    listClass,
+    tasks,
+    placeholder,
+  }) {
+    const card = document.createElement("section");
+    card.className = cardClass;
+    if (isCurrent) card.classList.add("current-period-card", ...currentClasses);
+    const heading = document.createElement("h3");
+    const button = document.createElement("button");
+    button.className = "heading-link";
+    button.type = "button";
+    button.textContent = label;
+    button.addEventListener("click", () => openDetailModal(periodType, anchorDate));
+    heading.append(button);
+    const list = document.createElement("ul");
+    list.className = `task-list ${listClass}`;
+    list.dataset.periodType = periodType;
+    list.dataset.targetDate = targetDate;
+    renderTaskList(list, periodType, tasks, placeholder);
+    card.append(heading, createTaskStack(list));
+    return card;
+  }
+
   function renderFuturePanel(panel, data = state, anchorDate = state.anchorDate) {
     const board = document.createElement("div");
     board.className = "future-board";
@@ -174,36 +205,13 @@ export function createPanelRenderer({
     const yearlyTasksByTarget = groupTasksByTargetDate(data.futureYearTasks);
   
     for (const year of futureYears(anchorDate)) {
-      const card = document.createElement("section");
-      card.className = "year-card";
-      if (year === now.getFullYear()) {
-        card.classList.add("current-period-card", "current-year-card");
-      }
-  
-      const heading = document.createElement("h3");
-      const headingButton = document.createElement("button");
-      headingButton.className = "heading-link";
-      headingButton.type = "button";
-      headingButton.textContent = `${year} Goals`;
-      headingButton.addEventListener("click", async () => {
-        await openDetailModal("YEARLY", new Date(year, 0, 1));
-      });
-      heading.append(headingButton);
-  
-      const list = document.createElement("ul");
-      list.className = "task-list year-task-list";
-      list.dataset.periodType = "YEARLY";
-      list.dataset.targetDate = String(year);
-  
-      renderTaskList(
-        list,
-        "YEARLY",
-        yearlyTasksByTarget.get(list.dataset.targetDate) ?? [],
-        `${year} 목표`,
-      );
-  
-      card.append(heading, createTaskStack(list));
-      grid.append(card);
+      grid.append(createPeriodTaskCard({
+        cardClass: "year-card", currentClasses: ["current-year-card"],
+        isCurrent: year === now.getFullYear(), label: `${year} Goals`,
+        periodType: "YEARLY", anchorDate: new Date(year, 0, 1), targetDate: String(year),
+        listClass: "year-task-list", tasks: yearlyTasksByTarget.get(String(year)) ?? [],
+        placeholder: `${year} 목표`,
+      }));
     }
   
     board.append(
@@ -232,36 +240,14 @@ export function createPanelRenderer({
     const monthlyTasksByTarget = groupTasksByTargetDate(data.yearlyMonthTasks);
   
     for (let index = 0; index < 12; index += 1) {
-      const card = document.createElement("section");
-      card.className = "month-card";
-      if (year === now.getFullYear() && index === now.getMonth()) {
-        card.classList.add("current-period-card", "current-month-card");
-      }
-  
-      const heading = document.createElement("h3");
-      const headingButton = document.createElement("button");
-      headingButton.className = "heading-link";
-      headingButton.type = "button";
-      headingButton.textContent = `${index + 1}월`;
-      headingButton.addEventListener("click", async () => {
-        await openDetailModal("MONTHLY", new Date(year, index, 1));
-      });
-      heading.append(headingButton);
-  
-      const list = document.createElement("ul");
-      list.className = "task-list month-task-list";
-      list.dataset.periodType = "MONTHLY";
-      list.dataset.targetDate = monthTarget(year, index);
-  
-      renderTaskList(
-        list,
-        "MONTHLY",
-        monthlyTasksByTarget.get(list.dataset.targetDate) ?? [],
-        `${index + 1}월 할 일 입력 후 Enter`,
-      );
-  
-      card.append(heading, createTaskStack(list));
-      grid.append(card);
+      const targetDate = monthTarget(year, index);
+      grid.append(createPeriodTaskCard({
+        cardClass: "month-card", currentClasses: ["current-month-card"],
+        isCurrent: year === now.getFullYear() && index === now.getMonth(), label: `${index + 1}월`,
+        periodType: "MONTHLY", anchorDate: new Date(year, index, 1), targetDate,
+        listClass: "month-task-list", tasks: monthlyTasksByTarget.get(targetDate) ?? [],
+        placeholder: `${index + 1}월 할 일 입력 후 Enter`,
+      }));
     }
   
     board.append(
