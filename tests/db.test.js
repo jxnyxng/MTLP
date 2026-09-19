@@ -147,10 +147,12 @@ test("API key, theme and timeline settings remain compatible", async (t) => {
   assert.equal(await db.getApiKey(), "");
   assert.equal(await db.getThemeId(), "sage-graphite-light");
   assert.equal(await db.getTimelineRange("2026-09-17"), null);
-  await db.saveApiKey("test-key");
+  sqlite.prepare("INSERT INTO settings (key, value) VALUES (?, ?)").run("gemini_api_key", "test-key");
   await db.saveThemeId("forest-ink-dark");
   await db.saveTimelineRange("2026-09-17", { start: 8, end: 20 });
   assert.equal(await db.getApiKey(), "test-key");
+  await db.deleteApiKey();
+  assert.equal(await db.getApiKey(), "");
   assert.equal(await db.getThemeId(), "forest-ink-dark");
   assert.deepEqual(await db.getTimelineRange("2026-09-17"), { start: 8, end: 20 });
   sqlite.prepare("UPDATE settings SET value = ? WHERE key = ?").run("broken json", "timeline_range:2026-09-17");

@@ -1,8 +1,9 @@
 import { createPeriodOverviewRenderer } from "./period-overview-renderer.js";
+import { createDetailModalController } from "./detail-modal-controller.js";
+import { createDailyPanelRenderer } from "./daily-panel-renderer.js";
 
 export function createPanelRenderer({
   state,
-  timelineHourOptions,
   renderJournalPanel,
   openJournalEditor,
   createSplitTaskStack,
@@ -13,8 +14,6 @@ export function createPanelRenderer({
   timelineRangeFor,
   loadAndRender,
   loadTaskData,
-  saveTimelineRange,
-  setStatus,
   normalizeTimelineRange,
   futureYears,
   weekDates,
@@ -75,15 +74,6 @@ export function createPanelRenderer({
     }, new Map());
   }
 
-  function groupTasksByTimeBlock(tasks) {
-    return tasks.reduce((groups, task) => {
-      const timeBlock = task.time_block || null;
-      if (!groups.has(timeBlock)) groups.set(timeBlock, []);
-      groups.get(timeBlock).push(task);
-      return groups;
-    }, new Map());
-  }
-  
   function createStagingHeading(card, periodType, targetDate, label, extra = null) {
     const key = stagingKey(periodType, targetDate);
     const isCollapsed = state.collapsedSections.has(key);
@@ -154,6 +144,33 @@ export function createPanelRenderer({
     futureYears,
     weekDates,
     toDateKey,
+  });
+
+  const { renderDailyPanel } = createDailyPanelRenderer({
+    state,
+    targetFor,
+    timelineRangeFor,
+    normalizeTimelineRange,
+    isCurrentDate,
+    isCurrentHourBlock,
+    hoursForRange,
+    hourValue,
+    createTodoSummary,
+    createPeriodOverview,
+    createTaskStack,
+    renderTaskList,
+  });
+
+  const { closeDetailModal, openDetailModal, renderDetailModal } = createDetailModalController({
+    state,
+    loadAndRender,
+    loadTaskData,
+    titleFor,
+    targetFor,
+    weekDates,
+    toDateKey,
+    toWeekStartDate,
+    createPanel,
   });
   
   function createPeriodTaskCard({
@@ -429,185 +446,9 @@ export function createPanelRenderer({
     panel.append(createTaskStack(list));
   }
   
-  function createTimelineRangeControls(anchorDate, range) {
-    const controls = document.createElement("div");
-    controls.className = "timeline-range-controls";
-  
-    const startSelect = document.createElement("select");
-    startSelect.setAttribute("aria-label", "시작 시간");
-  
-    const endSelect = document.createElement("select");
-    endSelect.setAttribute("aria-label", "끝 시간");
-  
-    timelineHourOptions.forEach((label, hour) => {
-      if (hour < 24) {
-        const startOption = document.createElement("option");
-        startOption.value = String(hour);
-        startOption.textContent = label;
-        startSelect.append(startOption);
-      }
-  
-      if (hour > 0) {
-        const endOption = document.createElement("option");
-        endOption.value = String(hour);
-        endOption.textContent = label;
-        endSelect.append(endOption);
-      }
-    });
-  
-    startSelect.value = String(range.start);
-    endSelect.value = String(range.end);
-  
-    const saveRange = async () => {
-      let start = Number(startSelect.value);
-      let end = Number(endSelect.value);
-      if (start >= end) {
-        if (document.activeElement === startSelect) {
-          end = Math.min(24, start + 1);
-          endSelect.value = String(end);
-        } else {
-          start = Math.max(0, end - 1);
-          startSelect.value = String(start);
-        }
-      }
-  
-      const targetDate = targetFor("DAILY", anchorDate);
-      const nextRange = { start, end };
-      state.timelineRanges[targetDate] = nextRange;
-      if (state.dbReady) await saveTimelineRange(targetDate, nextRange);
-      setStatus("시간 범위 저장 완료");
-      await loadAndRender();
-    };
-  
-    startSelect.addEventListener("change", saveRange);
-    endSelect.addEventListener("change", saveRange);
-  
-    const separator = document.createElement("span");
-    separator.textContent = "-";
-  
-    controls.append(startSelect, separator, endSelect);
-    return controls;
-  }
-  
-  function renderDailyPanel(panel, data = state, anchorDate = state.anchorDate) {
-    const board = document.createElement("div");
-    board.className = "daily-board";
-    const range = timelineRangeFor(anchorDate, data);
-    const now = new Date();
-    const isToday = isCurrentDate(anchorDate, now);
-  
-    const dayTarget = targetFor("DAILY", anchorDate);
-    const dailyTasksByTimeBlock = groupTasksByTimeBlock(data.tasks.DAILY);
-    const today = createTodoSummary(
-      "DAILY",
-      dailyTasksByTimeBlock.get(null) ?? [],
-      "Daily task",
-      dayTarget,
-    );
-  
-    const timeline = document.createElement("div");
-    timeline.className = "timeline";
-  
-    const hourColumns = document.createElement("div");
-    hourColumns.className = "timeline-columns";
-  
-    const leftColumn = document.createElement("div");
-    leftColumn.className = "timeline-column";
-  
-    const rightColumn = document.createElement("div");
-    rightColumn.className = "timeline-column";
-  
-    const visibleHours = hoursForRange(range, normalizeTimelineRange);
-    const selectedHours = new Set(visibleHours);
-    const outsideTaskHours = [
-      ...new Set(
-        data.tasks.DAILY
-          .map((task) => task.time_block)
-          .filter((timeBlock) => timeBlock && !selectedHours.has(timeBlock)),
-      ),
-    ].sort((left, right) => hourValue(left) - hourValue(right));
-    const timelineHours = [...visibleHours, ...outsideTaskHours];
-  
-    timelineHours.forEach((hour, index) => {
-      const row = document.createElement("section");
-      row.className = "hour-row";
-      if (isToday && isCurrentHourBlock(hour, now)) {
-        row.classList.add("current-hour-row");
-      }
-  
-      const label = document.createElement("strong");
-      label.textContent = hour;
-  
-      const list = document.createElement("ul");
-      list.className = "task-list compact";
-      list.dataset.periodType = "DAILY";
-      list.dataset.targetDate = dayTarget;
-      list.dataset.timeBlock = hour;
-      renderTaskList(
-        list,
-        "DAILY",
-        dailyTasksByTimeBlock.get(hour) ?? [],
-        "이 칸에 입력 후 Enter",
-      );
-  
-      row.append(label, createTaskStack(list));
-      (index < timelineHours.length / 2 ? leftColumn : rightColumn).append(row);
-    });
-  
-    hourColumns.append(leftColumn, rightColumn);
-    timeline.append(hourColumns);
-  
-    board.append(
-      createPeriodOverview("This Day", "DAILY", dayTarget, today, anchorDate, data),
-      timeline,
-    );
-    panel.append(board);
-  }
-  
-  async function openDetailModal(periodType, anchorDate) {
-    if (periodType === state.activeTab && periodType === "DAILY") return;
-    state.detailModal = { periodType, anchorDate: new Date(anchorDate) };
-    const detail = state.detailModal;
-    await loadAndRender();
-    if (state.detailModal !== detail) return;
-    document.querySelector("#detail-modal").showModal();
-  }
-  
-  function closeDetailModal() {
-    state.detailModal = null;
-    const modal = document.querySelector("#detail-modal");
-    if (modal.open) modal.close();
-    document.querySelector("#detail-view").replaceChildren();
-  }
-  
-  async function renderDetailModal(isCurrent = () => true) {
-    const modal = document.querySelector("#detail-modal");
-    const detailView = document.querySelector("#detail-view");
-  
-    if (!state.detailModal) {
-      if (modal.open) modal.close();
-      detailView.replaceChildren();
-      return;
-    }
-  
-    const detail = state.detailModal;
-    const { periodType, anchorDate } = detail;
-    const data = await loadTaskData(anchorDate);
-    if (state.detailModal !== detail || !isCurrent()) return;
-    document.querySelector(".detail-modal").className =
-      `detail-modal detail-modal-${periodType.toLowerCase()}`;
-    document.querySelector("#detail-title").textContent = titleFor(periodType);
-    document.querySelector("#detail-meta").textContent =
-      periodType === "WEEKLY"
-        ? `${toDateKey(toWeekStartDate(anchorDate))} - ${toDateKey(weekDates(anchorDate).at(-1))}`
-        : targetFor(periodType, anchorDate);
-    detailView.replaceChildren(createPanel(periodType, false, data, anchorDate, true));
-  }
-
   return {
     closeDetailModal,
     createPanel,
-    createTimelineRangeControls,
     renderDetailModal,
   };
 }

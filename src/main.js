@@ -7,7 +7,6 @@ import {
   dateInputValue as periodInputValue,
   parseDateInput as parsePeriodInput,
 } from "./period-utils.js";
-import { refreshAfterTaskSave } from "./services/task-mutation-service.js";
 import "./styles.css";
 import { DEFAULT_TIMELINE_RANGE, tabs, themes, timelineHourOptions } from "./config.js";
 import {
@@ -22,21 +21,24 @@ import {
   weekDates,
 } from "./date-utils.js";
 import { state } from "./state.js";
-import { calculateAppendPosition, getNextPosition } from "./task-layout.js";
 import { createJournalRenderer } from "./renderers/journal-renderer.js";
 import { createPanelRenderer } from "./renderers/panel-renderer.js";
 import { createSettingsRenderer } from "./renderers/settings-renderer.js";
 import { createShellRenderer } from "./renderers/shell-renderer.js";
 import { createTaskDragController } from "./task-drag-controller.js";
 import { createTaskRenderer } from "./renderers/task-renderer.js";
+import { createTimelineRangeRenderer } from "./renderers/timeline-range-renderer.js";
 import { createReviewService } from "./services/review-service.js";
 import { createTaskDataService } from "./services/task-data-service.js";
+import { createTaskCommandService } from "./services/task-command-service.js";
+import { createThemeService } from "./services/theme-service.js";
+import { geminiClient } from "./services/gemini-client.js";
 import {
   addJournalEntry,
   addTask,
   deleteTask,
   deleteJournalEntry,
-  getApiKey,
+  getApiKey as getLegacyApiKey,
   getAllJournalEntries,
   getThemeId,
   getTasks,
@@ -44,7 +46,7 @@ import {
   getTimelineRange,
   initDb,
   moveTask,
-  saveApiKey,
+  deleteApiKey as deleteLegacyApiKey,
   saveThemeId,
   saveTimelineRange,
   saveTaskOrder,
@@ -55,20 +57,6 @@ import {
 } from "./db.js";
 
 const app = document.querySelector("#app");
-const legacyThemeIds = {
-  productivity: "sage-graphite-light",
-  "productivity-light": "sage-graphite-light",
-  diary: "mist-blue-light",
-  "diary-light": "mist-blue-light",
-  study: "ink-lavender-light",
-  "study-light": "ink-lavender-light",
-  minimal: "sage-graphite-light",
-  "minimal-light": "sage-graphite-light",
-  "productivity-dark": "graphite-blue-dark",
-  "diary-dark": "forest-ink-dark",
-  "study-dark": "graphite-blue-dark",
-  "minimal-dark": "graphite-blue-dark",
-};
 let renderVersion = 0;
 let renderJournalActions;
 let renderJournalPanel;
@@ -92,20 +80,12 @@ let renderViewActions;
 let renderViewHeading;
 let bindSortables;
 let destroySortables;
+let addBlankTask;
+let addTaskFromInput;
+let handleTaskBlockShortcuts;
+let selectTaskBlock;
 
-function themeById(themeId) {
-  const normalizedThemeId = legacyThemeIds[themeId] ?? themeId;
-  return themes.find((theme) => theme.id === normalizedThemeId) ?? themes[0];
-}
-
-function applyTheme(themeId) {
-  const theme = themeById(themeId);
-  state.themeId = theme.id;
-  document.documentElement.dataset.theme = theme.id;
-  Object.entries(theme.css).forEach(([name, value]) => {
-    document.documentElement.style.setProperty(name, value);
-  });
-}
+const { applyTheme } = createThemeService({ state, themes });
 
 function normalizeTimelineRange(range) {
   const start = Number(range?.start);
@@ -144,179 +124,9 @@ function shiftDate(periodType, amount) {
   state.shouldAnimatePeriod = true;
 }
 
-function taskBlockFromItem(item) {
-  if (!item?.classList.contains("task-item")) return null;
-  return {
-    id: Number(item.dataset.id),
-    content: item.dataset.content ?? "",
-    status: item.dataset.status ?? "TODO",
-  };
-}
-
-function selectTaskBlock(item) {
-  const task = taskBlockFromItem(item);
-  if (!task) return;
-  state.selectedTaskId = task.id;
-  document.querySelectorAll(".task-item.is-block-selected").forEach((element) => {
-    element.classList.toggle("is-block-selected", Number(element.dataset.id) === task.id);
-  });
-  item.classList.add("is-block-selected");
-  setStatus("블록 선택됨");
-}
-
-function selectedTaskItem() {
-  if (!state.selectedTaskId) return null;
-  return document.querySelector(`.task-item[data-id="${state.selectedTaskId}"]`);
-}
-
 function setStatus(message) {
   const status = document.querySelector("#db-status");
   if (status) status.textContent = message;
-}
-
-function tasksFor(periodType, timeBlock = null, targetDate = targetFor(periodType)) {
-  const source =
-    periodType === "MONTHLY"
-      ? [...state.tasks.MONTHLY, ...state.yearlyMonthTasks]
-      : periodType === "DAILY"
-        ? [...state.tasks.DAILY, ...state.monthDailyTasks, ...state.weekDailyTasks]
-        : periodType === "FUTURE"
-          ? state.futureYearTasks
-          : state.tasks[periodType];
-  const seen = new Set();
-
-  return source.filter((task) => {
-    if (seen.has(task.id)) return false;
-    seen.add(task.id);
-    const timeMatches = timeBlock ? task.time_block === timeBlock : !task.time_block;
-    return task.target_date === targetDate && timeMatches;
-  });
-}
-
-async function createTaskFromTrigger(trigger, content, periodType, timeBlock, targetDate) {
-  const sourceList = trigger.closest(".task-list");
-  return addTask(
-    content,
-    periodType,
-    targetDate,
-    sourceList
-      ? calculateAppendPosition(sourceList)
-      : getNextPosition(tasksFor(periodType, timeBlock, targetDate)),
-    timeBlock,
-    sourceList?.dataset.splitLane ?? null,
-  );
-}
-
-async function addTaskFromInput(
-  input,
-  periodType,
-  timeBlock = null,
-  targetDate = targetFor(periodType),
-) {
-  const content = input.value.trim();
-  if (!content) return;
-
-  if (!state.dbReady) {
-    setStatus("SQLite가 준비되지 않아 저장할 수 없습니다.");
-    return;
-  }
-
-  try {
-    await createTaskFromTrigger(input, content, periodType, timeBlock, targetDate);
-    input.value = "";
-    setStatus("저장 완료");
-    await refreshAfterTaskSave({ loadAndRender, setStatus });
-  } catch (error) {
-    console.error(error);
-    setStatus("저장 실패");
-  }
-}
-
-async function addBlankTask(
-  trigger,
-  periodType,
-  timeBlock = null,
-  targetDate = targetFor(periodType),
-) {
-  if (!state.dbReady) {
-    setStatus("SQLite가 준비되지 않아 저장할 수 없습니다.");
-    return;
-  }
-
-  try {
-    const id = await createTaskFromTrigger(trigger, "", periodType, timeBlock, targetDate);
-    state.selectedTaskId = null;
-    state.pendingEditTaskId = id;
-    setStatus("빈 블록 생성 완료");
-    await refreshAfterTaskSave({ loadAndRender, setStatus });
-  } catch (error) {
-    console.error(error);
-    setStatus("빈 블록 생성 실패");
-  }
-}
-
-async function copySelectedTaskBlock() {
-  const item = selectedTaskItem();
-  const task = taskBlockFromItem(item);
-  if (!task) {
-    setStatus("선택된 블록이 없습니다.");
-    return;
-  }
-
-  state.copiedTaskBlock = {
-    content: task.content,
-    status: task.status,
-  };
-  setStatus("블록 복사 완료");
-}
-
-async function pasteSelectedTaskBlock() {
-  const item = selectedTaskItem();
-  const target = taskBlockFromItem(item);
-  if (!target) {
-    setStatus("대체할 블록을 선택하세요.");
-    return;
-  }
-  if (!state.copiedTaskBlock) {
-    setStatus("복사된 블록이 없습니다.");
-    return;
-  }
-  if (!state.dbReady) {
-    setStatus("SQLite가 준비되지 않아 저장할 수 없습니다.");
-    return;
-  }
-
-  try {
-    await updateTaskBlock(
-      target.id,
-      state.copiedTaskBlock.content,
-      state.copiedTaskBlock.status,
-    );
-    setStatus("블록 대체 완료");
-    await refreshAfterTaskSave({ loadAndRender, setStatus });
-  } catch (error) {
-    console.error(error);
-    setStatus("블록 대체 실패");
-  }
-}
-
-function isEditableTarget(target) {
-  return Boolean(target.closest("input, textarea, [contenteditable='true']"));
-}
-
-async function handleTaskBlockShortcuts(event) {
-  if (!event.metaKey || event.altKey || event.shiftKey || event.ctrlKey) return;
-  if (isEditableTarget(event.target)) return;
-
-  const key = event.key.toLowerCase();
-  if (key === "c") {
-    event.preventDefault();
-    await copySelectedTaskBlock();
-  }
-  if (key === "v") {
-    event.preventDefault();
-    await pasteSelectedTaskBlock();
-  }
 }
 
 async function switchTab(tabId) {
@@ -383,7 +193,15 @@ async function openSettings() {
   const modal = document.querySelector("#settings-modal");
   const input = document.querySelector("#api-key-input");
   const apiKeySetting = document.querySelector(".api-key-setting");
-  input.value = state.dbReady ? await getApiKey() : "";
+  try {
+    const hasKey = state.dbReady && await geminiClient.hasApiKey();
+    input.value = "";
+    input.placeholder = hasKey ? "저장된 API Key를 변경하려면 새 키 입력" : "Gemini API Key";
+  } catch (error) {
+    console.error(error);
+    input.value = "";
+    setStatus("설정을 불러오지 못했습니다.");
+  }
   apiKeySetting.open = false;
   renderThemeOptions();
   modal.showModal();
@@ -394,9 +212,16 @@ async function saveSettings() {
   const apiKeySetting = document.querySelector(".api-key-setting");
   const apiKey = input.value.trim();
   if (apiKey && state.dbReady) {
-    await saveApiKey(apiKey);
-    apiKeySetting.open = false;
-    setStatus("API Key 저장 완료");
+    try {
+      await geminiClient.saveApiKey(apiKey);
+      input.value = "";
+      input.placeholder = "저장된 API Key를 변경하려면 새 키 입력";
+      apiKeySetting.open = false;
+      setStatus("API Key 저장 완료");
+    } catch (error) {
+      console.error(error);
+      setStatus("API Key 저장 실패");
+    }
   }
 }
 
@@ -417,6 +242,16 @@ async function saveSettings() {
   saveThemeId,
   setStatus,
 }));
+
+({ addBlankTask, addTaskFromInput, handleTaskBlockShortcuts, selectTaskBlock } =
+  createTaskCommandService({
+    state,
+    addTask,
+    updateTaskBlock,
+    targetFor,
+    setStatus,
+    loadAndRender,
+  }));
 
 ({ createSplitTaskStack, createTaskStack, renderTaskList } = createTaskRenderer({
   state,
@@ -455,12 +290,21 @@ async function saveSettings() {
 
 ({ requestReview } = createReviewService({
   state,
-  getApiKey,
+  hasApiKey: geminiClient.hasApiKey,
+  generateReview: geminiClient.generateReview,
 }));
 
-({ closeDetailModal, createPanel, createTimelineRangeControls, renderDetailModal } = createPanelRenderer({
+({ createTimelineRangeControls } = createTimelineRangeRenderer({
   state,
   timelineHourOptions,
+  targetFor,
+  saveTimelineRange,
+  setStatus,
+  loadAndRender,
+}));
+
+({ closeDetailModal, createPanel, renderDetailModal } = createPanelRenderer({
+  state,
   renderJournalPanel,
   openJournalEditor,
   createSplitTaskStack,
@@ -471,8 +315,6 @@ async function saveSettings() {
   timelineRangeFor,
   loadAndRender,
   loadTaskData,
-  saveTimelineRange,
-  setStatus,
   normalizeTimelineRange,
   futureYears,
   weekDates,
@@ -521,6 +363,16 @@ try {
   state.dbReady = true;
   applyTheme(await getThemeId());
   setStatus("SQLite 준비 완료");
+  try {
+    const legacyApiKey = await getLegacyApiKey();
+    if (legacyApiKey && !(await geminiClient.hasApiKey())) {
+      await geminiClient.saveApiKey(legacyApiKey);
+    }
+    if (legacyApiKey) await deleteLegacyApiKey();
+  } catch (error) {
+    console.error(error);
+    setStatus("SQLite 준비 완료 · API Key 보안 저장소 확인 필요");
+  }
 } catch (error) {
   applyTheme(state.themeId);
   setStatus("Tauri 환경에서 SQLite를 초기화할 수 있습니다.");

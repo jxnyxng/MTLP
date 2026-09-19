@@ -173,12 +173,13 @@ export async function saveTaskOrder(target, updates) {
   );
 }
 
-export async function saveApiKey(apiKey) {
-  return saveSetting("gemini_api_key", apiKey);
-}
-
 export async function getApiKey() {
   return getSetting("gemini_api_key", "");
+}
+
+export async function deleteApiKey() {
+  const database = await initDb();
+  return database.execute("DELETE FROM settings WHERE key = ?", ["gemini_api_key"]);
 }
 
 export async function saveThemeId(themeId) {

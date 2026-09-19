@@ -281,6 +281,16 @@
 }
 
 .period-overview {
+  --planner-task-row-columns: 14px minmax(0, 1fr) 17px;
+  --planner-task-row-gap: 4px;
+  --planner-task-row-min-height: 22px;
+  --planner-task-row-padding: 1px 4px;
+  --planner-task-icon-width: 14px;
+  --planner-task-icon-font-size: 10px;
+  --planner-task-font-size: 10px;
+  --planner-task-line-height: 1.3;
+  --planner-task-control-size: 17px;
+  --planner-add-task-font-size: 10px;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 6px;
@@ -313,7 +323,7 @@
 }
 
 .period-overview .split-task-list {
-  gap: 5px;
+  gap: 3px;
   max-height: var(--planner-overview-content-max-height);
   min-height: 0;
   overflow: auto;
@@ -321,7 +331,10 @@
   scrollbar-width: none;
 }
 
-.period-overview .split-task-list,
+.period-overview .split-task-list {
+  padding: 4px 6px;
+}
+
 .period-journal-list {
   padding: 6px 8px;
 }
