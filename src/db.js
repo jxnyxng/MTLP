@@ -63,6 +63,11 @@ async function initializeDb() {
     )
   `);
 
+  await database.execute(`
+    CREATE INDEX IF NOT EXISTS idx_tasks_period_target_position
+      ON tasks (period_type, target_date, position)
+  `);
+
   db = database;
   return database;
 }
@@ -86,6 +91,20 @@ export async function getTasksByTargetPrefix(periodType, targetPrefix) {
       WHERE period_type = ? AND target_date LIKE ?
       ORDER BY target_date ASC, position ASC, id ASC`,
     [periodType, `${targetPrefix}%`],
+  );
+}
+
+export async function getTasksByTargets(periodType, targetDates) {
+  const uniqueTargets = [...new Set(targetDates)];
+  if (!uniqueTargets.length) return [];
+  const database = await initDb();
+  const placeholders = uniqueTargets.map(() => "?").join(", ");
+  return database.select(
+    `SELECT *
+       FROM tasks
+      WHERE period_type = ? AND target_date IN (${placeholders})
+      ORDER BY target_date ASC, position ASC, id ASC`,
+    [periodType, ...uniqueTargets],
   );
 }
 

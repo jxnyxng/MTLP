@@ -191,41 +191,6 @@ export function createTaskRenderer({
     input.style.height = `${input.scrollHeight}px`;
   }
   
-  function createEntryRow(
-    periodType,
-    timeBlock = null,
-    targetDate = targetFor(periodType),
-  ) {
-    const row = document.createElement("li");
-    row.className = "entry-row";
-  
-    const input = document.createElement("textarea");
-    input.rows = 1;
-    input.addEventListener("input", () => resizeEntryInput(input));
-    input.addEventListener("blur", () => {
-      requestAnimationFrame(() => {
-        if (input.value.trim()) return;
-        row.replaceWith(createEntryInput(periodType, null, timeBlock, targetDate));
-      });
-    });
-    input.addEventListener("keydown", async (event) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        row.replaceWith(createEntryInput(periodType, null, timeBlock, targetDate));
-        return;
-      }
-      if (event.key !== "Enter") return;
-      if (event.shiftKey) return;
-      event.preventDefault();
-      await addTaskFromInput(input, periodType, timeBlock, targetDate);
-      resizeEntryInput(input);
-    });
-  
-    row.append(input);
-    requestAnimationFrame(() => resizeEntryInput(input));
-    return row;
-  }
-  
   function createEntryInput(
     periodType,
     _placeholder,
@@ -251,13 +216,6 @@ export function createTaskRenderer({
       });
     }
     row.append(button);
-    return row;
-  }
-  
-  function createEmptyReadItem() {
-    const row = document.createElement("li");
-    row.className = "empty-read-row";
-    row.setAttribute("aria-hidden", "true");
     return row;
   }
   

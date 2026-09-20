@@ -86,6 +86,8 @@ test("task CRUD, cross-period movement and block replacement preserve all task f
   assert.deepEqual([task.content, task.status, task.position, task.time_block, task.split_lane], ["수정", "DONE", 3000, "09:00", 0]);
   assert.deepEqual(await db.getTasks("WEEKLY", "2026-09-13"), []);
   assert.equal((await db.getTasksByTargetPrefix("DAILY", "2026-09-"))[0].id, id);
+  assert.equal((await db.getTasksByTargets("DAILY", ["2026-09-16", "2026-09-17", "2026-09-17"]))[0].id, id);
+  assert.deepEqual(await db.getTasksByTargets("DAILY", []), []);
   await db.updateTaskBlock(id, "복사한 블록", "CANCELLED");
   assert.equal((await db.getTasks("DAILY", "2026-09-17"))[0].status, "CANCELLED");
   await db.deleteTask(id);

@@ -4,6 +4,7 @@ export function createTaskDataService({
   getAllJournalEntries,
   getTasks,
   getTasksByTargetPrefix,
+  getTasksByTargets,
   getTimelineRange,
   normalizeTimelineRange,
   targetFor,
@@ -35,31 +36,27 @@ export function createTaskDataService({
     const weeklyTargetDate = targetFor("WEEKLY", anchorDate);
     const legacyWeeklyTargetDate = legacyMondayTargetForWeek(anchorDate);
     const [
-      futureYearGroups,
+      futureYearTasks,
       future,
       yearly,
       monthly,
-      weeklyGroups,
+      weeklyTasks,
       daily,
       yearlyMonthTasks,
       monthDailyTasks,
-      weekDailyGroups,
+      weekDailyTasks,
       journalEntries,
       timelineRange,
     ] = await Promise.all([
-      Promise.all(yearTargets.map((targetDate) => getTasks("YEARLY", targetDate))),
+      getTasksByTargets("YEARLY", yearTargets),
       getTasks("FUTURE", targetFor("FUTURE", anchorDate)),
       getTasks("YEARLY", targetFor("YEARLY", anchorDate)),
       getTasks("MONTHLY", targetFor("MONTHLY", anchorDate)),
-      Promise.all(
-        [weeklyTargetDate, legacyWeeklyTargetDate]
-          .filter((targetDate, index, targetDates) => targetDates.indexOf(targetDate) === index)
-          .map((targetDate) => getTasks("WEEKLY", targetDate)),
-      ),
+      getTasksByTargets("WEEKLY", [weeklyTargetDate, legacyWeeklyTargetDate]),
       getTasks("DAILY", dailyTargetDate),
       getTasksByTargetPrefix("MONTHLY", `${targetFor("YEARLY", anchorDate)}-`),
       getTasksByTargetPrefix("DAILY", `${targetFor("MONTHLY", anchorDate)}-`),
-      Promise.all(weekTargets.map((targetDate) => getTasks("DAILY", targetDate))),
+      getTasksByTargets("DAILY", weekTargets),
       getAllJournalEntries(),
       getTimelineRange(dailyTargetDate),
     ]);
@@ -69,13 +66,13 @@ export function createTaskDataService({
         FUTURE: future,
         YEARLY: yearly,
         MONTHLY: monthly,
-        WEEKLY: uniqueTasks(weeklyGroups.flat()),
+        WEEKLY: uniqueTasks(weeklyTasks),
         DAILY: daily,
       },
-      futureYearTasks: futureYearGroups.flat(),
+      futureYearTasks,
       yearlyMonthTasks,
       monthDailyTasks,
-      weekDailyTasks: weekDailyGroups.flat(),
+      weekDailyTasks,
       journalEntries,
       timelineRange: normalizeTimelineRange(timelineRange),
     };

@@ -18,6 +18,7 @@ function fixture(overrides = {}) {
     getAllJournalEntries: async () => [{ id: 99, content: "저널" }],
     getTasks: async (type, date) => [{ id: `${type}:${date}`, target_date: date }],
     getTasksByTargetPrefix: async (type, prefix) => [{ id: `${type}:${prefix}`, target_date: prefix }],
+    getTasksByTargets: async (type, dates) => dates.map((date) => ({ id: `${type}:${date}`, target_date: date })),
     getTimelineRange: async () => ({ start: 5, end: 24 }),
     normalizeTimelineRange: (range) => range,
     ...overrides,
@@ -70,9 +71,9 @@ test("mutating the anchor while loading does not commit data for another date", 
 
 test("all planner periods, overview groups, journals and legacy weekly tasks remain available", async () => {
   const { service, state } = fixture({
-    getTasks: async (type, date) => type === "WEEKLY"
-      ? [{ id: 1, target_date: date }, { id: date, target_date: date }]
-      : [{ id: `${type}:${date}`, target_date: date }],
+    getTasksByTargets: async (type, dates) => type === "WEEKLY"
+      ? dates.flatMap((date) => [{ id: 1, target_date: date }, { id: date, target_date: date }])
+      : dates.map((date) => ({ id: `${type}:${date}`, target_date: date })),
   });
   await service.loadTasks();
   assert.deepEqual(Object.keys(state.tasks).sort(), ["DAILY", "FUTURE", "MONTHLY", "WEEKLY", "YEARLY"]);

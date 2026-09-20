@@ -1,6 +1,7 @@
 import { createPeriodOverviewRenderer } from "./period-overview-renderer.js";
 import { createDetailModalController } from "./detail-modal-controller.js";
 import { createDailyPanelRenderer } from "./daily-panel-renderer.js";
+import { createDayTaskCardRenderer } from "./day-task-card-renderer.js";
 
 export function createPanelRenderer({
   state,
@@ -172,6 +173,14 @@ export function createPanelRenderer({
     toWeekStartDate,
     createPanel,
   });
+
+  const { createDayTaskCard } = createDayTaskCardRenderer({
+    createTaskStack,
+    isCurrentDate,
+    openDetailModal,
+    renderTaskList,
+    toDateKey,
+  });
   
   function createPeriodTaskCard({
     cardClass,
@@ -316,49 +325,17 @@ export function createPanelRenderer({
         const isCurrentMonth =
           date.getFullYear() === anchorDate.getFullYear() &&
           date.getMonth() === anchorDate.getMonth();
-        const card = document.createElement("section");
-        card.className = "day-card";
-        if (date.getDay() === 6) card.classList.add("weekend-saturday");
-        if (date.getDay() === 0) card.classList.add("weekend-sunday");
-        if (!isCurrentMonth) card.classList.add("muted-day-card");
-        if (isCurrentMonth && isCurrentDate(date, now)) {
-          card.classList.add("current-period-card", "current-day-card");
-        }
-  
-        const heading = document.createElement("h3");
-        const headingButton = document.createElement("button");
-        headingButton.className = "heading-link day-heading-link";
-        headingButton.type = "button";
-        headingButton.innerHTML = `<span>${day}</span><small>${date.toLocaleDateString("en-US", { weekday: "short" })}</small>`;
-        if (isCurrentMonth) {
-          headingButton.addEventListener("click", async () => {
-            await openDetailModal("DAILY", date);
-          });
-        } else {
-          headingButton.disabled = true;
-          headingButton.setAttribute("aria-label", "이번 달이 아닌 날짜");
-        }
-        heading.append(headingButton);
-  
-        if (isCurrentMonth) {
-          const list = document.createElement("ul");
-          list.className = "task-list day-task-list";
-          list.dataset.periodType = "DAILY";
-          list.dataset.targetDate = targetDate;
-  
-          renderTaskList(
-            list,
-            "DAILY",
-            dailyTasksByTarget.get(targetDate) ?? [],
-            "Plan this day",
-          );
-  
-          card.append(heading, createTaskStack(list));
-        } else {
-          const placeholder = document.createElement("div");
-          placeholder.className = "muted-day-placeholder";
-          card.append(heading, placeholder);
-        }
+        const card = createDayTaskCard({
+          cardClass: "day-card",
+          date,
+          enabled: isCurrentMonth,
+          headingPrimary: String(day),
+          headingSecondary: date.toLocaleDateString("en-US", { weekday: "short" }),
+          listClass: "day-task-list",
+          now,
+          placeholder: "Plan this day",
+          tasks: dailyTasksByTarget.get(targetDate) ?? [],
+        });
         grid.append(card);
       }
   
@@ -381,41 +358,16 @@ export function createPanelRenderer({
       data.weekDailyTasks.filter((task) => !task.time_block),
     );
   
-    const createWeekDayCard = (date) => {
-      const targetDate = toDateKey(date);
-      const card = document.createElement("section");
-      card.className = "week-day-card";
-      if (date.getDay() === 6) card.classList.add("weekend-saturday");
-      if (date.getDay() === 0) card.classList.add("weekend-sunday");
-      if (isCurrentDate(date, now)) {
-        card.classList.add("current-period-card", "current-day-card");
-      }
-  
-      const heading = document.createElement("h3");
-      const headingButton = document.createElement("button");
-      headingButton.className = "heading-link day-heading-link";
-      headingButton.type = "button";
-      headingButton.innerHTML = `<span>${date.toLocaleDateString("en-US", { weekday: "short" })}</span><small>${date.getMonth() + 1}/${date.getDate()}</small>`;
-      headingButton.addEventListener("click", async () => {
-        await openDetailModal("DAILY", date);
-      });
-      heading.append(headingButton);
-  
-      const list = document.createElement("ul");
-      list.className = "task-list week-task-list";
-      list.dataset.periodType = "DAILY";
-      list.dataset.targetDate = targetDate;
-  
-      renderTaskList(
-        list,
-        "DAILY",
-        dailyTasksByTarget.get(targetDate) ?? [],
-        "Daily plan",
-      );
-  
-      card.append(heading, createTaskStack(list));
-      return card;
-    };
+    const createWeekDayCard = (date) => createDayTaskCard({
+      cardClass: "week-day-card",
+      date,
+      headingPrimary: date.toLocaleDateString("en-US", { weekday: "short" }),
+      headingSecondary: `${date.getMonth() + 1}/${date.getDate()}`,
+      listClass: "week-task-list",
+      now,
+      placeholder: "Daily plan",
+      tasks: dailyTasksByTarget.get(toDateKey(date)) ?? [],
+    });
   
     const dates = weekDates(anchorDate);
     const weekTarget = targetFor("WEEKLY", anchorDate);
