@@ -1,4 +1,4 @@
-import { refreshAfterTaskSave } from "../services/task-mutation-service.js";
+import { createTaskActionService } from "../services/task-action-service.js";
 import { splitTasksIntoLanes } from "../task-layout.js";
 
 export function createTaskRenderer({
@@ -13,6 +13,15 @@ export function createTaskRenderer({
   addBlankTask,
   targetFor,
 }) {
+  const { removeTask, saveTaskContent, toggleTaskStatus } = createTaskActionService({
+    state,
+    deleteTask,
+    updateTaskContent,
+    updateTaskStatus,
+    setStatus,
+    loadAndRender,
+  });
+
   function createTaskItem(task) {
     const item = document.createElement("li");
     item.className = `task-item status-${task.status.toLowerCase()}`;
@@ -59,31 +68,12 @@ export function createTaskRenderer({
     if (!state.isLocked) {
       deleteButton.addEventListener("click", async (event) => {
         event.stopPropagation();
-        if (!state.dbReady) return;
-  
-        try {
-          await deleteTask(task.id);
-          if (state.selectedTaskId === Number(task.id)) state.selectedTaskId = null;
-          setStatus("삭제 완료");
-          await refreshAfterTaskSave({ loadAndRender, setStatus });
-        } catch (error) {
-          console.error(error);
-          setStatus("삭제 실패");
-        }
+        await removeTask(task);
       });
   
       item.addEventListener("contextmenu", async (event) => {
         event.preventDefault();
-        if (!state.dbReady) return;
-  
-        try {
-          await updateTaskStatus(task.id, task.status === "DONE" ? "TODO" : "DONE");
-          setStatus("상태 저장 완료");
-          await refreshAfterTaskSave({ loadAndRender, setStatus });
-        } catch (error) {
-          console.error(error);
-          setStatus("상태 저장 실패");
-        }
+        await toggleTaskStatus(task);
       });
   
       content.addEventListener("click", (event) => {
@@ -137,16 +127,16 @@ export function createTaskRenderer({
         deleteButton?.removeAttribute("disabled");
         return;
       }
-  
+
       if (!state.dbReady) {
         setStatus("SQLite가 준비되지 않아 저장할 수 없습니다.");
         finished = false;
         cancel();
         return;
       }
-  
-      try {
-        await updateTaskContent(task.id, nextContent);
+
+      const saved = await saveTaskContent(task, nextContent);
+      if (saved) {
         task.content = nextContent;
         item.dataset.content = nextContent;
         content.textContent = nextContent || "빈 블록";
@@ -154,11 +144,7 @@ export function createTaskRenderer({
         item.classList.remove("is-editing-task");
         item.classList.toggle("is-empty-block", !nextContent);
         deleteButton?.removeAttribute("disabled");
-        setStatus("수정 완료");
-        await refreshAfterTaskSave({ loadAndRender, setStatus });
-      } catch (error) {
-        console.error(error);
-        setStatus("수정 실패");
+      } else {
         finished = false;
       }
     };
