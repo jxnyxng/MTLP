@@ -7,5 +7,3 @@ npm test
 npm run build
 npm run tauri -- build --debug --no-bundle -- --offline
 ```
-
-회귀 테스트는 메모리 SQLite와 DOM 어댑터를 사용하며, 사용자 DB를 수정하지 않습니다. 실제 Tauri 화면의 드래그 및 편집 동작은 별도로 확인해야 합니다.
