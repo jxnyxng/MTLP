@@ -1,6 +1,7 @@
 @import "./styles/planner.css";
 @import "./styles/journal.css";
 @import "./styles/modal.css";
+@import "./styles/editorial.css";
 
 :root {
   --color-bg: #f8fafc;
@@ -66,7 +67,7 @@ textarea:focus-visible {
 
 .task-edit-input:focus-visible,
 .journal-title-input:focus-visible,
-.journal-body-textarea:focus-visible {
+.journal-body-editor:focus-visible {
   outline: 0;
 }
 

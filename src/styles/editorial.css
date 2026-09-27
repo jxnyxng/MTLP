@@ -1,0 +1,680 @@
+/* Editorial application shell ------------------------------------------------ */
+
+:root {
+  --editorial-radius-sm: 8px;
+  --editorial-radius-md: 12px;
+  --editorial-radius-lg: 18px;
+  --editorial-shadow: 0 12px 36px rgb(15 23 42 / 5%);
+  --editorial-rule: color-mix(in srgb, var(--color-border), transparent 18%);
+  --editorial-hover: color-mix(in srgb, var(--color-primary-soft), transparent 42%);
+  --task-block-radius: var(--editorial-radius-sm);
+}
+
+body {
+  letter-spacing: -0.006em;
+}
+
+.shell {
+  grid-template-columns: 224px minmax(0, 1fr);
+  background: var(--color-bg);
+}
+
+.shell[data-sidebar-collapsed="true"] {
+  grid-template-columns: 68px minmax(0, 1fr);
+}
+
+.sidebar {
+  gap: 24px;
+  padding: 18px 14px 14px;
+  border-right: 1px solid var(--editorial-rule);
+  background: color-mix(in srgb, var(--color-sidebar), var(--color-bg) 26%);
+}
+
+.sidebar-head {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  align-items: center;
+  width: 100%;
+  min-height: 42px;
+}
+
+.brand {
+  gap: 1px;
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  overflow: visible;
+}
+
+.brand strong {
+  font-family: Georgia, "Times New Roman", ui-serif, serif;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.brand span {
+  max-width: 100%;
+  overflow: visible;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.shell[data-sidebar-collapsed="true"] .brand {
+  width: 0;
+  overflow: hidden;
+}
+
+.tabs,
+.sidebar-actions {
+  gap: 4px;
+}
+
+.tabs button,
+.sidebar-actions button {
+  grid-template-columns: 42px minmax(0, 1fr);
+  min-height: 40px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 560;
+}
+
+.tabs button::before,
+.sidebar-actions button::before {
+  top: 1px;
+  left: 1px;
+  width: calc(100% - 2px);
+  height: 38px;
+  border-radius: 10px;
+}
+
+.tabs button.active::before {
+  background: var(--color-panel);
+  box-shadow:
+    inset 0 0 0 1px var(--editorial-rule),
+    0 4px 14px rgb(15 23 42 / 5%);
+}
+
+.tab-icon,
+.sidebar-action-icon {
+  width: 42px;
+  height: 40px;
+}
+
+.tab-icon {
+  font-size: 15px;
+  font-style: normal;
+}
+
+.tab-label {
+  padding-left: 2px;
+  font-style: normal;
+  text-transform: none;
+}
+
+.sidebar-actions {
+  padding-top: 10px;
+  border-top: 1px solid var(--editorial-rule);
+}
+
+.workspace {
+  padding: 0 20px 20px;
+}
+
+.topbar {
+  grid-template-columns: minmax(170px, 1fr) auto minmax(260px, 1fr);
+  grid-template-areas: "title period actions";
+  gap: 16px;
+  min-height: 64px;
+  margin-bottom: 14px;
+  border: 0;
+  border-bottom: 1px solid var(--editorial-rule);
+  border-radius: 0;
+  padding: 8px 4px;
+  background: color-mix(in srgb, var(--color-bg), transparent 7%);
+  box-shadow: none;
+  backdrop-filter: blur(18px);
+}
+
+.topbar-title {
+  grid-area: title;
+  gap: 5px;
+  padding-left: 0;
+}
+
+.topbar-title-row {
+  align-items: center;
+  gap: 10px;
+}
+
+.topbar h1 {
+  font-family: Georgia, "Times New Roman", ui-serif, serif;
+  font-size: 25px;
+  font-weight: 700;
+  letter-spacing: -0.035em;
+}
+
+.topbar p {
+  display: block;
+  color: var(--color-subtle);
+  font-size: 9px;
+  font-weight: 720;
+  letter-spacing: 0.13em;
+}
+
+.topbar-actions {
+  grid-area: actions;
+  align-self: center;
+  gap: 8px;
+}
+
+.period-nav {
+  grid-area: period;
+  align-self: center;
+  justify-content: center;
+  padding-top: 0;
+}
+
+.date-carousel {
+  grid-template-columns: 30px minmax(176px, auto) 30px;
+  gap: 2px;
+  padding: 2px;
+  background: var(--color-panel);
+  box-shadow: inset 0 0 0 1px var(--editorial-rule);
+}
+
+.current-card {
+  padding-inline: 16px;
+  font-size: 14px;
+  font-weight: 670;
+}
+
+.today-button {
+  border: 1px solid var(--editorial-rule);
+  padding: 3px 9px 4px;
+  background: var(--color-panel);
+  font-size: 10px;
+}
+
+.view-actions,
+.lock-actions {
+  flex-wrap: nowrap;
+}
+
+.view-actions button,
+.lock-actions button {
+  min-height: 30px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding-inline: 10px;
+  font-size: 11px;
+}
+
+.view-actions .companion-view-button {
+  border-color: var(--editorial-rule);
+  background: var(--color-panel);
+}
+
+.view-actions .companion-view-button:hover,
+.view-actions .companion-view-button:focus-visible {
+  border-color: var(--color-border-strong);
+  background: var(--editorial-hover);
+}
+
+.lock-actions button {
+  border-color: var(--editorial-rule);
+  background: var(--color-panel);
+}
+
+.topbar:has(.journal-view-actions) {
+  grid-template-columns: minmax(150px, auto) minmax(0, 1fr);
+  grid-template-areas: "title actions";
+}
+
+.topbar:has(.journal-view-actions) .topbar-actions,
+.topbar:has(.journal-view-actions) .journal-view-actions {
+  width: 100%;
+}
+
+.topbar:has(.journal-view-actions) .period-nav {
+  display: none;
+}
+
+.topbar:has(.journal-view-actions) .journal-view-actions {
+  grid-template-columns: minmax(200px, 1fr) 148px 110px auto auto;
+  padding-top: 0;
+}
+
+@media (max-width: 1240px) and (min-width: 981px) {
+  .topbar {
+    grid-template-columns: minmax(140px, auto) auto minmax(180px, 1fr);
+    gap: 10px;
+  }
+
+  .view-actions .companion-view-button {
+    width: 32px;
+    overflow: hidden;
+    padding-inline: 7px;
+    font-size: 0;
+    white-space: nowrap;
+  }
+
+  .view-actions .companion-view-button::after {
+    content: attr(data-short-label);
+    font-size: 11px;
+  }
+}
+
+.panel {
+  border-radius: var(--editorial-radius-lg);
+}
+
+.split.side-panel-open {
+  gap: 16px;
+}
+
+/* Shared planner surfaces ---------------------------------------------------- */
+
+.future-board,
+.yearly-board,
+.monthly-board,
+.weekly-board,
+.daily-board {
+  --planner-task-font-size: 13px;
+  --planner-add-task-font-size: 13px;
+  --planner-task-row-min-height: 28px;
+  --planner-task-control-size: 22px;
+  --planner-card-heading-font-size: 12px;
+  --planner-summary-heading-font-size: 12px;
+}
+
+#view.side-panel-open .future-board,
+#view.side-panel-open .yearly-board,
+#view.side-panel-open .monthly-board,
+#view.side-panel-open .weekly-board,
+#view.side-panel-open .daily-board {
+  --planner-task-font-size: 12px;
+  --planner-add-task-font-size: 12px;
+  --planner-task-row-min-height: 26px;
+  --planner-task-control-size: 20px;
+  --planner-card-heading-font-size: 11px;
+  --planner-summary-heading-font-size: 11px;
+}
+
+.future-board,
+.yearly-board,
+.monthly-board,
+.weekly-board,
+.daily-board {
+  gap: 12px;
+  padding: 10px 0 0;
+}
+
+.year-grid,
+.month-grid,
+.day-grid {
+  gap: 10px;
+  padding: 0;
+}
+
+.month-week-list,
+.week-day-strip,
+.timeline-columns {
+  gap: 10px;
+}
+
+.year-card,
+.month-card,
+.day-card,
+.week-day-card,
+.period-staging-card,
+.period-overview-card,
+.hour-row {
+  border-color: var(--editorial-rule);
+  border-radius: var(--editorial-radius-md) !important;
+  background: var(--color-panel);
+  box-shadow: 0 5px 18px rgb(15 23 42 / 3%);
+}
+
+.year-card,
+.month-card,
+.day-card,
+.week-day-card {
+  transition:
+    border-color 140ms ease,
+    box-shadow 140ms ease,
+    transform 140ms ease;
+}
+
+.year-card:hover,
+.month-card:hover,
+.day-card:not(.muted-day-card):hover,
+.week-day-card:hover {
+  border-color: var(--color-border-strong);
+  box-shadow: var(--editorial-shadow);
+}
+
+.year-card h3,
+.month-card h3,
+.day-card h3,
+.week-day-card h3,
+.period-staging-card h3 {
+  border-bottom-color: var(--editorial-rule);
+  font-weight: 680;
+}
+
+.period-overview-card > h3 {
+  font-size: 11px;
+}
+
+#view.side-panel-open .period-overview-card > h3 {
+  font-size: 10px;
+}
+
+.heading-link {
+  padding-inline: 9px;
+}
+
+.heading-link:hover,
+.heading-link:focus-visible {
+  background: var(--editorial-hover);
+}
+
+.current-period-card {
+  border-color: color-mix(in srgb, var(--color-primary), transparent 38%);
+  box-shadow:
+    inset 0 3px 0 var(--color-primary),
+    0 8px 24px rgb(15 23 42 / 5%);
+}
+
+.current-period-card > h3 {
+  background: color-mix(in srgb, var(--color-primary-soft), var(--color-panel) 58%);
+  color: var(--color-text);
+}
+
+.current-period-card .heading-link,
+.current-period-card .day-heading-link span,
+.current-period-card .day-heading-link small,
+.day-card.current-period-card.weekend-saturday .day-heading-link span,
+.day-card.current-period-card.weekend-saturday .day-heading-link small,
+.day-card.current-period-card.weekend-sunday .day-heading-link span,
+.day-card.current-period-card.weekend-sunday .day-heading-link small {
+  color: var(--color-primary);
+}
+
+.current-period-card .heading-link:hover,
+.current-period-card .heading-link:focus-visible {
+  background: var(--editorial-hover);
+  color: var(--color-primary);
+}
+
+.period-staging-card {
+  background: color-mix(in srgb, var(--color-secondary-soft), var(--color-panel) 62%);
+}
+
+.period-overview {
+  --planner-task-font-size: 12px;
+  --planner-add-task-font-size: 12px;
+  --planner-task-row-min-height: 24px;
+  gap: 10px;
+  border-top-color: var(--editorial-rule);
+  padding: 10px;
+}
+
+.period-summary-card > h3 {
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+
+.period-overview .period-journal-date {
+  font-size: 11px;
+}
+
+.period-overview .task-item,
+.period-overview .empty-read-row,
+.period-overview .period-journal-item {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+}
+
+.period-overview .task-item:hover,
+.period-overview .task-item:focus-within,
+.period-overview .period-journal-item:hover,
+.period-overview .period-journal-item:focus-visible {
+  border-color: var(--editorial-rule);
+  background: var(--editorial-hover);
+  box-shadow: none;
+}
+
+.period-overview .task-item.is-block-selected {
+  border-color: color-mix(in srgb, var(--color-primary), transparent 42%);
+  background: var(--color-primary-soft);
+}
+
+.period-summary-card {
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--color-surface), var(--color-bg) 8%);
+}
+
+.task-item {
+  transition:
+    background 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.task-item:hover {
+  background: color-mix(in srgb, var(--color-primary-soft), transparent 62%);
+  box-shadow: none;
+}
+
+.task-item.is-block-selected {
+  background: var(--color-primary-soft);
+  box-shadow: inset 3px 0 0 var(--color-primary);
+}
+
+.task-content {
+  font-weight: 500;
+}
+
+.add-task-row:hover,
+.add-task-row:focus-within {
+  background: transparent;
+}
+
+.add-task-row,
+.period-overview .add-task-row,
+.month-week-section .add-task-row {
+  min-height: 28px;
+  padding: 4px 0;
+}
+
+.add-task-button {
+  width: 100%;
+  height: 20px;
+  min-height: 20px;
+  border-radius: 6px !important;
+}
+
+.task-list:not(:has(.task-item)) .add-task-button {
+  font-size: 18px;
+}
+
+.add-task-button:hover,
+.add-task-button:focus-visible {
+  background: var(--editorial-hover);
+  box-shadow: none;
+}
+
+.hour-row {
+  gap: 8px;
+  min-height: 42px;
+  padding: 4px 8px;
+}
+
+.hour-row strong {
+  margin: -4px 0 -4px -8px;
+  border-right-color: var(--editorial-rule);
+  border-radius: var(--editorial-radius-md) 0 0 var(--editorial-radius-md) !important;
+  font-size: 10px;
+}
+
+.current-hour-row {
+  border-color: color-mix(in srgb, var(--color-primary), transparent 34%);
+}
+
+.current-hour-row strong {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.summary {
+  border-color: var(--editorial-rule);
+  border-radius: var(--editorial-radius-lg);
+  box-shadow: var(--editorial-shadow);
+}
+
+/* Dialogs ------------------------------------------------------------------- */
+
+.modal,
+.detail-modal {
+  border-radius: var(--editorial-radius-lg);
+  box-shadow: 0 28px 80px rgb(15 23 42 / 20%);
+}
+
+.modal-header,
+.detail-modal-head {
+  border-bottom-color: var(--editorial-rule);
+}
+
+@media (max-width: 980px) {
+  .sidebar {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    padding: 10px 14px;
+    border-right: 0;
+    border-bottom: 1px solid var(--editorial-rule);
+  }
+
+  .sidebar-head {
+    min-width: 0;
+  }
+
+  .brand span,
+  .sidebar-actions .sidebar-action-label {
+    display: none;
+  }
+
+  .tabs {
+    display: flex;
+    gap: 2px;
+    overflow-x: auto;
+  }
+
+  .tabs button {
+    grid-template-columns: 0 auto;
+    width: auto;
+    min-width: max-content;
+    padding-inline: 11px;
+  }
+
+  .tabs button::before {
+    width: calc(100% - 2px);
+  }
+
+  .tab-icon {
+    width: 0;
+    overflow: hidden;
+  }
+
+  .sidebar-actions {
+    display: flex;
+    padding: 0 0 0 8px;
+    border-top: 0;
+    border-left: 1px solid var(--editorial-rule);
+  }
+
+  .sidebar-actions button {
+    grid-template-columns: 38px 0;
+    width: 38px;
+  }
+
+  .sidebar-action-icon {
+    width: 38px;
+  }
+
+  .workspace {
+    padding: 0 14px 16px;
+  }
+
+  .topbar {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "title"
+      "period"
+      "actions";
+    gap: 8px;
+    min-height: 0;
+    padding-block: 14px;
+  }
+
+  .topbar-actions,
+  .period-nav {
+    justify-content: flex-start;
+    padding-top: 0;
+  }
+
+  .topbar:has(.journal-view-actions) {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "title"
+      "actions";
+  }
+
+  .topbar:has(.journal-view-actions) .journal-view-actions {
+    grid-template-columns: minmax(0, 1fr) 138px 104px auto auto;
+  }
+}
+
+@media (max-width: 680px) {
+  .sidebar {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .sidebar-head {
+    display: none;
+  }
+
+  .topbar:has(.journal-view-actions) .journal-view-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .view-actions {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+
+  .date-carousel {
+    width: 100%;
+    grid-template-columns: 34px minmax(0, 1fr) 34px;
+  }
+
+  .year-grid,
+  .month-grid,
+  .day-grid,
+  .week-day-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .week-day-strip > .week-day-card,
+  .week-day-strip > .week-day-card:nth-child(n + 5) {
+    grid-column: auto;
+  }
+}

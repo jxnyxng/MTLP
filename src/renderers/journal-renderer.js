@@ -171,7 +171,7 @@ export function createJournalRenderer({
     const addButton = document.createElement("button");
     addButton.className = "journal-add-button";
     addButton.type = "button";
-    addButton.textContent = "작성하기";
+    addButton.textContent = "+ 새 기록";
     addButton.setAttribute("aria-label", "메모 작성하기");
     addButton.addEventListener("click", async () => {
       await addJournalPage();
@@ -204,11 +204,26 @@ export function createJournalRenderer({
     const board = document.createElement("div");
     board.className = "journal-board";
 
+    const archiveHeader = document.createElement("header");
+    archiveHeader.className = "journal-archive-header";
+    const archiveCopy = document.createElement("div");
+    archiveCopy.className = "journal-archive-copy";
+    const heading = document.createElement("h2");
+    heading.textContent = "생각을 기록하는 공간";
+    const description = document.createElement("p");
+    description.textContent = "하루의 생각과 배움을 천천히 쌓아보세요.";
+    archiveCopy.append(heading, description);
+
+    const count = document.createElement("span");
+    count.className = "journal-archive-count";
+    count.textContent = `${(data.journalEntries ?? []).length} entries`;
+    archiveHeader.append(archiveCopy, count);
+
     const pages = document.createElement("section");
     pages.className = "journal-pages";
     renderJournalPages(pages, data.journalEntries ?? []);
 
-    board.append(pages);
+    board.append(archiveHeader, pages);
     panel.replaceChildren(board);
   }
 

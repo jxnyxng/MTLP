@@ -20,6 +20,9 @@ test("journal listing retains search, date filtering, sort, reset, deletion and 
   body.append(actions, panel);
   renderer.renderJournalActions(actions);
   renderer.renderJournalPanel(panel);
+  assert.equal(find(panel, ".journal-archive-copy").textContent.includes("생각을 기록하는 공간"), true);
+  assert.equal(find(panel, ".journal-archive-count").textContent, "2 entries");
+  assert.equal(find(actions, ".journal-add-button").textContent, "+ 새 기록");
   const pages = find(panel, ".journal-pages");
   const titles = () => pages.children.map((page) => find(page, ".journal-preview-title")?.textContent);
   assert.deepEqual(titles(), ["둘째", "첫째"]);

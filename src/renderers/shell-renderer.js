@@ -169,7 +169,9 @@ export function createShellRenderer({
       .map((tab) => {
         const button = document.createElement("button");
         button.type = "button";
-        button.textContent = tab.label.slice(0, 1);
+        button.className = "companion-view-button";
+        button.dataset.shortLabel = tab.label.slice(0, 1);
+        button.textContent = `+ ${tab.label}`;
         button.title = `${tab.label} 함께 보기`;
         button.setAttribute("aria-label", `${tab.label} 함께 보기`);
         button.addEventListener("click", async () => {
@@ -310,7 +312,8 @@ export function createShellRenderer({
     const todayJump = document.querySelector("#today-jump");
     todayJump.textContent = `Today, ${toDateKey(new Date())}`;
     todayJump.hidden = state.activeTab === "JOURNAL";
-    document.querySelector("#view-meta").textContent = "";
+    document.querySelector("#view-meta").textContent =
+      state.activeTab === "JOURNAL" ? "PERSONAL ARCHIVE" : "PLANNING HORIZON";
   }
 
   return {

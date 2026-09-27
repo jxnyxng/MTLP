@@ -22,3 +22,39 @@ test("bold, italic, code, quotes and lists survive editing serialization", (t) =
   appendJournalMarkdownBlocks(editor, markdown);
   assert.equal(journalEditorBodyToMarkdown(editor), markdown);
 });
+
+test("browser-inserted wrappers do not flatten formatted journal blocks", (t) => {
+  installFakeDom(t);
+  const editor = document.createElement("div");
+  const wrapper = document.createElement("div");
+  const heading = document.createElement("h2");
+  heading.append("소제목");
+  const quote = document.createElement("blockquote");
+  const bold = document.createElement("b");
+  bold.append("중요한 인용");
+  quote.append(bold);
+  const list = document.createElement("ul");
+  const item = document.createElement("li");
+  const italic = document.createElement("i");
+  italic.append("목록 항목");
+  item.append(italic);
+  list.append(item);
+  wrapper.append(heading, quote, list);
+  editor.append(wrapper);
+
+  const markdown = journalEditorBodyToMarkdown(editor);
+  assert.equal(markdown, "## 소제목\n> **중요한 인용**\n- _목록 항목_");
+
+  const reader = document.createElement("article");
+  appendJournalMarkdownBlocks(reader, markdown);
+  assert.deepEqual(reader.children.map((node) => node.tagName), ["H2", "BLOCKQUOTE", "UL"]);
+});
+
+test("ordered lists render and survive editor serialization", (t) => {
+  installFakeDom(t);
+  const markdown = "1. 첫째\n2. 둘째";
+  const editor = document.createElement("div");
+  appendJournalMarkdownBlocks(editor, markdown);
+  assert.equal(editor.children[0].tagName, "OL");
+  assert.equal(journalEditorBodyToMarkdown(editor), markdown);
+});

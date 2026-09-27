@@ -199,6 +199,8 @@ export function createJournalEditor({ state, addJournalEntry, updateJournalEntry
 
     const setEditorMode = (nextMode) => {
       sheet.dataset.mode = nextMode;
+      const editTitle = isDraft ? "새 기록" : "기록 수정";
+      editorTitle.textContent = nextMode === "edit" ? editTitle : "Journal";
       saveState.textContent = nextMode === "edit" ? "편집 중" : "저장됨";
       cancelButton.textContent = nextMode === "edit" ? "취소" : "닫기";
       if (nextMode === "edit") {
