@@ -4,7 +4,7 @@ import { createJournalEditor } from "../src/renderers/journal-editor-renderer.js
 import { find, installFakeDom } from "./helpers/fake-dom.js";
 
 function fixture(t, overrides = {}, entry = { id: null, target_date: "2026-09-17", position: 1000, content: "" }) {
-  const { body, confirmations } = installFakeDom(t);
+  const { body, confirmations, editorCommands } = installFakeDom(t);
   const calls = { inserts: [], updates: [], status: [], renders: 0 };
   const editor = createJournalEditor({
     state: { dbReady: true },
@@ -15,9 +15,22 @@ function fixture(t, overrides = {}, entry = { id: null, target_date: "2026-09-17
     ...overrides,
   });
   editor.openJournalEditor(entry, entry.id === null ? "edit" : "read");
-  return { entry, calls, element: (selector) => find(body, selector), confirmations,
+  return { entry, calls, element: (selector) => find(body, selector), confirmations, editorCommands,
     saveButton: find(body, (node) => node.className === "journal-editor-save") };
 }
+
+test("journal format toolbar retains its commands after extraction", async (t) => {
+  const { element, editorCommands } = fixture(t);
+  const boldButton = element((node) => node.title === "굵게");
+  const headingButton = element((node) => node.title === "소제목");
+
+  await boldButton.emit("click");
+  await headingButton.emit("click");
+
+  assert.deepEqual(editorCommands, [["bold"], ["formatBlock", false, "h2"]]);
+  assert.equal(boldButton.attributes.get("aria-pressed"), "false");
+  assert.equal(headingButton.attributes.get("aria-pressed"), "false");
+});
 
 test("draft editor saves title and formatted body once and blocks editing or closing while saving", async (t) => {
   let release;

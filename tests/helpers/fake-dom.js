@@ -43,6 +43,7 @@ export class Element {
     }
     return event;
   }
+  dispatchEvent(event) { void this.emit(event.type, event); return true; }
   showModal() { this.open = true; }
   close() { this.open = false; void this.emit("close"); }
   focus() {}
@@ -68,11 +69,13 @@ export function installFakeDom(t) {
   const originals = names.map((name) => [name, Object.getOwnPropertyDescriptor(globalThis, name)]);
   const body = new Element("body");
   const confirmations = [];
+  const editorCommands = [];
   globalThis.document = {
     body, activeElement: null, createElement: (tag) => new Element(tag),
     createTextNode: (text) => new TextNode(text),
     querySelector: (selector) => selector.split(" ").reduce((root, part) => root && find(root, part), body),
     queryCommandValue: () => "p", queryCommandState: () => false,
+    execCommand: (...args) => { editorCommands.push(args); return true; },
   };
   globalThis.window = { confirm: (message) => { confirmations.push(message); return true; } };
   globalThis.HTMLElement = Element;
@@ -84,5 +87,5 @@ export function installFakeDom(t) {
       else delete globalThis[name];
     }
   });
-  return { body, confirmations };
+  return { body, confirmations, editorCommands };
 }

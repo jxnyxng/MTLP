@@ -5,6 +5,7 @@ import {
   createJournalMarkdownView,
   journalEditorBodyToMarkdown,
 } from "./journal-markdown-renderer.js";
+import { createJournalFormatToolbar } from "./journal-format-toolbar.js";
 
 export function createJournalEditor({ state, addJournalEntry, updateJournalEntry, setStatus, loadAndRender }) {
   function getJournalDialog() {
@@ -31,30 +32,6 @@ export function createJournalEditor({ state, addJournalEntry, updateJournalEntry
     const selection = window.getSelection();
     selection.removeAllRanges();
     selection.addRange(range);
-  }
-
-  function blockFormatValue() {
-    return String(document.queryCommandValue("formatBlock") || "").toLowerCase();
-  }
-
-  function applyTextFormat(editor, type) {
-    editor.focus();
-    const blockFormat = blockFormatValue();
-    if (type === "heading") document.execCommand("formatBlock", false, blockFormat === "h2" ? "p" : "h2");
-    if (type === "bold") document.execCommand("bold");
-    if (type === "italic") document.execCommand("italic");
-    if (type === "quote") document.execCommand("formatBlock", false, blockFormat === "blockquote" ? "p" : "blockquote");
-    if (type === "list") document.execCommand("insertUnorderedList");
-    editor.dispatchEvent(new Event("input", { bubbles: true }));
-  }
-
-  function isEditorCommandActive(type) {
-    if (type === "bold") return document.queryCommandState("bold");
-    if (type === "italic") return document.queryCommandState("italic");
-    if (type === "list") return document.queryCommandState("insertUnorderedList");
-    if (type === "heading") return blockFormatValue() === "h2";
-    if (type === "quote") return blockFormatValue() === "blockquote";
-    return false;
   }
 
   function createBodyEditor(body) {
@@ -97,9 +74,6 @@ export function createJournalEditor({ state, addJournalEntry, updateJournalEntry
 
     editorHeader.append(editorMeta, closeButton);
 
-    const toolbar = document.createElement("div");
-    toolbar.className = "journal-editor-toolbar";
-
     const fields = document.createElement("div");
     fields.className = "journal-editor-fields";
 
@@ -114,39 +88,14 @@ export function createJournalEditor({ state, addJournalEntry, updateJournalEntry
     titleInput.setAttribute("aria-label", "메모 제목");
 
     const bodyEditor = createBodyEditor(body);
+    const {
+      toolbar,
+      buttons: formatButtons,
+      updateButtonStates: updateFormatButtonStates,
+    } = createJournalFormatToolbar(bodyEditor);
 
     const reader = document.createElement("div");
     reader.className = "journal-reader";
-
-    const formatButtons = [];
-    [
-      ["heading", "H2", "소제목"],
-      ["bold", "B", "굵게"],
-      ["italic", "I", "기울임"],
-      ["quote", ">", "인용"],
-      ["list", "•", "목록"],
-    ].forEach(([type, label, title]) => {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.textContent = label;
-      button.title = title;
-      button.setAttribute("aria-label", title);
-      button.addEventListener("mousedown", (event) => {
-        event.preventDefault();
-      });
-      button.addEventListener("click", () => {
-        applyTextFormat(bodyEditor, type);
-        updateFormatButtonStates();
-      });
-      formatButtons.push([type, button]);
-      toolbar.append(button);
-    });
-
-    const updateFormatButtonStates = () => {
-      formatButtons.forEach(([type, button]) => {
-        button.setAttribute("aria-pressed", String(isEditorCommandActive(type)));
-      });
-    };
 
     fields.append(titleInput, bodyEditor);
     const renderReader = () => {
