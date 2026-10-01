@@ -162,3 +162,27 @@ test("failed drops show failure and reload the persisted view", async (t) => {
   assert.equal(calls.status.at(-1), "드래그 저장 실패");
   assert.equal(calls.renders, 1);
 });
+
+test("saved drops keep their success semantics when only refresh fails", async (t) => {
+  const moved = item(1, 2000);
+  const source = list("DAILY", "2026-09-17", [moved]);
+  const originalError = console.error;
+  console.error = () => {};
+  t.after(() => { console.error = originalError; });
+  const { instances, calls } = fixture(t, [source], {
+    loadAndRender: async () => {
+      calls.renders++;
+      throw new Error("refresh failed");
+    },
+  });
+  await instances.get(source).options.onEnd({
+    from: source,
+    to: source,
+    item: moved,
+    oldDraggableIndex: 1,
+    newDraggableIndex: 0,
+  });
+  assert.equal(calls.order.length, 1);
+  assert.equal(calls.status.at(-1), "변경은 저장됐지만 화면을 갱신하지 못했습니다.");
+  assert.equal(calls.renders, 1);
+});

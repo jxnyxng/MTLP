@@ -46,3 +46,31 @@ test("journal listing retains search, date filtering, sort, reset, deletion and 
   assert.equal(find(body, ".journal-title-input").value, "둘째");
   assert.equal(find(body, ".journal-editor-sheet").dataset.mode, "read");
 });
+
+test("journal deletion does not report a persisted delete as failed when refresh fails", async (t) => {
+  const { body } = installFakeDom(t);
+  const statuses = [];
+  let deleted = false;
+  const state = {
+    dbReady: true,
+    journalEntries: [{ id: 1, target_date: "2026-09-16", content: "기록" }],
+  };
+  const originalError = console.error;
+  console.error = () => {};
+  t.after(() => { console.error = originalError; });
+
+  const renderer = createJournalRenderer({
+    state,
+    deleteJournalEntry: async () => { deleted = true; },
+    setStatus: (message) => statuses.push(message),
+    loadAndRender: async () => { throw new Error("refresh failed"); },
+  });
+  const panel = document.createElement("section");
+  panel.className = "journal-panel";
+  body.append(panel);
+  renderer.renderJournalPanel(panel);
+
+  await find(panel, ".journal-delete").emit("click");
+  assert.equal(deleted, true);
+  assert.equal(statuses.at(-1), "일기는 삭제됐지만 목록을 갱신하지 못했습니다.");
+});

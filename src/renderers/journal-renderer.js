@@ -2,6 +2,7 @@ import { splitJournalContent } from "../journal-utils.js";
 import { getNextPosition } from "../task-layout.js";
 import { createJournalEditor } from "./journal-editor-renderer.js";
 import { journalMarkdownToPlainText } from "./journal-markdown-renderer.js";
+import { refreshAfterSave } from "../services/task-mutation-service.js";
 
 export function createJournalRenderer({
   state,
@@ -98,11 +99,16 @@ export function createJournalRenderer({
       try {
         await deleteJournalEntry(entry.id);
         setStatus("일기 삭제 완료");
-        await loadAndRender();
       } catch (error) {
         console.error(error);
         setStatus("일기 삭제 실패");
+        return;
       }
+      await refreshAfterSave({
+        loadAndRender,
+        setStatus,
+        refreshFailureMessage: "일기는 삭제됐지만 목록을 갱신하지 못했습니다.",
+      });
     });
 
     page.addEventListener("click", () => openJournalEditor(entry));

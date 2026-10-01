@@ -1,3 +1,5 @@
+import { refreshAfterSave } from "../services/task-mutation-service.js";
+
 export function createTimelineRangeRenderer({
   state,
   timelineHourOptions,
@@ -69,15 +71,13 @@ export function createTimelineRangeRenderer({
 
       state.timelineRanges[targetDate] = nextRange;
       setStatus("시간 범위 저장 완료");
-      try {
-        await loadAndRender();
-      } catch (error) {
-        console.error(error);
-        setStatus("저장 완료 (화면 새로고침 실패)");
-      } finally {
-        startSelect.disabled = false;
-        endSelect.disabled = false;
-      }
+      await refreshAfterSave({
+        loadAndRender,
+        setStatus,
+        refreshFailureMessage: "저장 완료 (화면 새로고침 실패)",
+      });
+      startSelect.disabled = false;
+      endSelect.disabled = false;
     };
 
     startSelect.addEventListener("change", saveRange);

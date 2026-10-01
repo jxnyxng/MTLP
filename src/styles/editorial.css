@@ -512,15 +512,28 @@ body {
 
 .hour-row {
   gap: 8px;
-  min-height: 42px;
-  padding: 4px 8px;
+  min-height: 34px;
+  padding: 1px 8px;
 }
 
 .hour-row strong {
-  margin: -4px 0 -4px -8px;
+  margin: -1px 0 -1px -8px;
   border-right-color: var(--editorial-rule);
   border-radius: var(--editorial-radius-md) 0 0 var(--editorial-radius-md) !important;
   font-size: 10px;
+}
+
+.hour-row .add-task-row {
+  min-height: 24px;
+  padding-block: 0;
+}
+
+.hour-row:has(.task-item) {
+  padding-block: 3px;
+}
+
+.hour-row:has(.task-item) > strong {
+  margin-block: -3px;
 }
 
 .current-hour-row {

@@ -32,6 +32,7 @@ import { createReviewService } from "./services/review-service.js";
 import { createTaskDataService } from "./services/task-data-service.js";
 import { createTaskCommandService } from "./services/task-command-service.js";
 import { createThemeService } from "./services/theme-service.js";
+import { createAppController } from "./services/app-controller.js";
 import { geminiClient } from "./services/gemini-client.js";
 import {
   addJournalEntry,
@@ -58,137 +59,22 @@ import {
 } from "./db.js";
 
 const app = document.querySelector("#app");
-let renderVersion = 0;
-let renderJournalActions;
-let renderJournalPanel;
-let openJournalEditor;
-let renderThemeOptions;
-let closeDetailModal;
-let createPanel;
-let createTimelineRangeControls;
-let renderDetailModal;
-let createSplitTaskStack;
-let createTaskStack;
-let renderTaskList;
-let loadTaskData;
-let loadTasks;
-let requestReview;
-let bindShellEvents;
-let renderPeriodNav;
-let renderShell;
-let renderTabs;
-let renderViewActions;
-let renderViewHeading;
-let bindSortables;
-let destroySortables;
-let addBlankTask;
-let addTaskFromInput;
-let handleTaskBlockShortcuts;
-let selectTaskBlock;
+const ui = {};
 
 const { applyTheme } = createThemeService({ state, themes });
-
-function normalizeTimelineRange(range) {
-  const start = Number(range?.start);
-  const end = Number(range?.end);
-  if (!Number.isInteger(start) || !Number.isInteger(end)) return DEFAULT_TIMELINE_RANGE;
-  if (start < 0 || end > 24 || start >= end) return DEFAULT_TIMELINE_RANGE;
-  return { start, end };
-}
-
-function targetFor(periodType, date = state.anchorDate) {
-  return periodTargetFor(periodType, date);
-}
-
-function timelineRangeFor(date, data = state) {
-  const targetDate = targetFor("DAILY", date);
-  return normalizeTimelineRange(data.timelineRange ?? state.timelineRanges[targetDate]);
-}
-
-function shiftedPeriodDate(periodType, amount) {
-  return shiftPeriodDate(periodType, amount, state.anchorDate);
-}
-
-function dateInputValue(periodType) {
-  return periodInputValue(periodType, state.anchorDate);
-}
-
-function parseDateInput(periodType, value) {
-  const date = parsePeriodInput(periodType, value);
-  if (!date) return;
-  state.anchorDate = date;
-  state.shouldAnimatePeriod = true;
-}
-
-function shiftDate(periodType, amount) {
-  state.anchorDate = shiftedPeriodDate(periodType, amount);
-  state.shouldAnimatePeriod = true;
-}
-
-function setStatus(message) {
-  const status = document.querySelector("#db-status");
-  if (status) status.textContent = message;
-}
-
-async function switchTab(tabId) {
-  state.activeTab = tabId;
-  if (state.sideTab === tabId || tabId === "JOURNAL") {
-    state.sideTab = null;
-    state.sidePanelOpen = false;
-  }
-  await loadAndRender();
-}
-
-async function openSidePanel(tabId) {
-  state.sideTab = tabId;
-  state.sidePanelOpen = true;
-  await loadAndRender();
-}
-
-async function closeSidePanel() {
-  state.sidePanelOpen = false;
-  state.sideTab = null;
-  await loadAndRender();
-}
-
-async function jumpToday() {
-  state.anchorDate = new Date();
-  state.shouldAnimatePeriod = true;
-  await loadAndRender();
-}
-
-async function loadAndRender() {
-  const currentRender = ++renderVersion;
-  await loadTasks();
-  if (currentRender !== renderVersion) return;
-  destroySortables();
-
-  if (state.sideTab === state.activeTab || state.sideTab === "JOURNAL") {
-    state.sideTab = null;
-    state.sidePanelOpen = false;
-  }
-
-  document.body.classList.toggle("is-editing", state.isEditing);
-  document.body.classList.toggle("is-locked", state.isLocked);
-  renderTabs();
-  renderViewActions({ closeSidePanel, openSidePanel });
-  renderPeriodNav();
-  state.shouldAnimatePeriod = false;
-
-  renderViewHeading(titleFor(state.activeTab));
-
-  const panels = [createPanel(state.activeTab)];
-  if (state.sideTab) panels.push(createPanel(state.sideTab, true));
-
-  const view = document.querySelector("#view");
-  view.className = state.sideTab ? "split side-layout" : "single";
-  view.classList.toggle("side-panel-open", state.sidePanelOpen);
-  view.replaceChildren(...panels);
-
-  await renderDetailModal(() => currentRender === renderVersion);
-  if (currentRender !== renderVersion) return;
-  bindSortables();
-}
+const {
+  dateInputValue, jumpToday, loadAndRender, normalizeTimelineRange, parseDateInput,
+  setStatus, shiftDate, shiftedPeriodDate, switchTab, targetFor, timelineRangeFor,
+} = createAppController({
+  state,
+  ui,
+  defaultTimelineRange: DEFAULT_TIMELINE_RANGE,
+  periodTargetFor,
+  shiftPeriodDate,
+  periodInputValue,
+  parsePeriodInput,
+  titleFor,
+});
 
 async function openSettings() {
   const modal = document.querySelector("#settings-modal");
@@ -204,7 +90,7 @@ async function openSettings() {
     setStatus("설정을 불러오지 못했습니다.");
   }
   apiKeySetting.open = false;
-  renderThemeOptions();
+  ui.renderThemeOptions();
   modal.showModal();
 }
 
@@ -226,7 +112,7 @@ async function saveSettings() {
   }
 }
 
-({ openJournalEditor, renderJournalActions, renderJournalPanel } = createJournalRenderer({
+Object.assign(ui, createJournalRenderer({
   state,
   addJournalEntry,
   deleteJournalEntry,
@@ -236,7 +122,7 @@ async function saveSettings() {
   loadAndRender,
 }));
 
-({ renderThemeOptions } = createSettingsRenderer({
+Object.assign(ui, createSettingsRenderer({
   state,
   themes,
   applyTheme,
@@ -244,30 +130,29 @@ async function saveSettings() {
   setStatus,
 }));
 
-({ addBlankTask, addTaskFromInput, handleTaskBlockShortcuts, selectTaskBlock } =
-  createTaskCommandService({
-    state,
-    addTask,
-    updateTaskBlock,
-    targetFor,
-    setStatus,
-    loadAndRender,
-  }));
+Object.assign(ui, createTaskCommandService({
+  state,
+  addTask,
+  updateTaskBlock,
+  targetFor,
+  setStatus,
+  loadAndRender,
+}));
 
-({ createSplitTaskStack, createTaskStack, renderTaskList } = createTaskRenderer({
+Object.assign(ui, createTaskRenderer({
   state,
   deleteTask,
   updateTaskContent,
   updateTaskStatus,
-  selectTaskBlock,
+  selectTaskBlock: ui.selectTaskBlock,
   setStatus,
   loadAndRender,
-  addTaskFromInput,
-  addBlankTask,
+  addTaskFromInput: ui.addTaskFromInput,
+  addBlankTask: ui.addBlankTask,
   targetFor,
 }));
 
-({ bindSortables, destroySortables } = createTaskDragController({
+Object.assign(ui, createTaskDragController({
   state,
   addTask,
   moveTask,
@@ -276,7 +161,7 @@ async function saveSettings() {
   loadAndRender,
 }));
 
-({ loadTaskData, loadTasks } = createTaskDataService({
+Object.assign(ui, createTaskDataService({
   state,
   futureYears,
   getAllJournalEntries,
@@ -290,13 +175,13 @@ async function saveSettings() {
   weekDates,
 }));
 
-({ requestReview } = createReviewService({
+Object.assign(ui, createReviewService({
   state,
   hasApiKey: geminiClient.hasApiKey,
   generateReview: geminiClient.generateReview,
 }));
 
-({ createTimelineRangeControls } = createTimelineRangeRenderer({
+Object.assign(ui, createTimelineRangeRenderer({
   state,
   timelineHourOptions,
   targetFor,
@@ -305,18 +190,18 @@ async function saveSettings() {
   loadAndRender,
 }));
 
-({ closeDetailModal, createPanel, renderDetailModal } = createPanelRenderer({
+Object.assign(ui, createPanelRenderer({
   state,
-  renderJournalPanel,
-  openJournalEditor,
-  createSplitTaskStack,
-  createTaskStack,
-  renderTaskList,
+  renderJournalPanel: ui.renderJournalPanel,
+  openJournalEditor: ui.openJournalEditor,
+  createSplitTaskStack: ui.createSplitTaskStack,
+  createTaskStack: ui.createTaskStack,
+  renderTaskList: ui.renderTaskList,
   titleFor,
   targetFor,
   timelineRangeFor,
   loadAndRender,
-  loadTaskData,
+  loadTaskData: ui.loadTaskData,
   normalizeTimelineRange,
   futureYears,
   weekDates,
@@ -329,18 +214,11 @@ async function saveSettings() {
   toWeekStartDate,
 }));
 
-({
-  bindShellEvents,
-  renderPeriodNav,
-  renderShell,
-  renderTabs,
-  renderViewActions,
-  renderViewHeading,
-} = createShellRenderer({
+Object.assign(ui, createShellRenderer({
   app,
   state,
   tabs,
-  createTimelineRangeControls,
+  createTimelineRangeControls: ui.createTimelineRangeControls,
   dateInputValue,
   inputTypeFor,
   jumpToday,
@@ -348,8 +226,8 @@ async function saveSettings() {
   openSettings,
   parseDateInput,
   periodLabel,
-  requestReview,
-  renderJournalActions,
+  requestReview: ui.requestReview,
+  renderJournalActions: ui.renderJournalActions,
   shiftDate,
   shiftedPeriodDate,
   switchTab,
@@ -357,8 +235,12 @@ async function saveSettings() {
   toDateKey,
 }));
 
-renderShell();
-bindShellEvents({ closeDetailModal, handleTaskBlockShortcuts, saveSettings });
+ui.renderShell();
+ui.bindShellEvents({
+  closeDetailModal: ui.closeDetailModal,
+  handleTaskBlockShortcuts: ui.handleTaskBlockShortcuts,
+  saveSettings,
+});
 
 try {
   await initDb();

@@ -1,5 +1,6 @@
 import Sortable from "sortablejs";
 import { calculateAppendPosition, POSITION_STEP } from "./task-layout.js";
+import { refreshAfterSave } from "./services/task-mutation-service.js";
 
 export function createTaskDragController({
   state,
@@ -186,12 +187,13 @@ export function createTaskDragController({
         await saveListOrder(event.to);
         setStatus("이동 저장 완료");
       }
-      await loadAndRender();
     } catch (error) {
       console.error(error);
       setStatus("드래그 저장 실패");
-      await loadAndRender();
+      await refreshAfterSave({ loadAndRender, setStatus });
+      return;
     }
+    await refreshAfterSave({ loadAndRender, setStatus });
   }
 
   function didDropInOriginalPlace(event) {
