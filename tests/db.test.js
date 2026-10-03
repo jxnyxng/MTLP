@@ -160,3 +160,16 @@ test("API key, theme and timeline settings remain compatible", async (t) => {
   sqlite.prepare("UPDATE settings SET value = ? WHERE key = ?").run("broken json", "timeline_range:2026-09-17");
   assert.equal(await db.getTimelineRange("2026-09-17"), null);
 });
+
+test("invalid task writes are rejected before SQL execution", async (t) => {
+  const { db, calls } = await fixture(t);
+  await db.initDb();
+  const before = calls.length;
+  await assert.rejects(db.addTask("task", "DAILY", "not-a-date"), /task.targetDate/);
+  await assert.rejects(db.updateTaskStatus(1, "UNKNOWN"), /task.status/);
+  await assert.rejects(db.saveTaskOrder(
+    { periodType: "DAILY", targetDate: "2026-09-17", splitLane: 4 },
+    [{ id: 1, position: 1000 }],
+  ), /task.splitLane/);
+  assert.equal(calls.length, before);
+});

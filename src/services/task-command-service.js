@@ -1,5 +1,5 @@
 import { calculateAppendPosition, getNextPosition } from "../task-layout.js";
-import { refreshAfterTaskSave } from "./task-mutation-service.js";
+import { executeMutation } from "./task-mutation-service.js";
 
 export function createTaskCommandService({
   state,
@@ -70,15 +70,14 @@ export function createTaskCommandService({
       setStatus("SQLite가 준비되지 않아 저장할 수 없습니다.");
       return;
     }
-    try {
-      await createTaskFromTrigger(input, content, periodType, timeBlock, targetDate);
-      input.value = "";
-      setStatus("저장 완료");
-      await refreshAfterTaskSave({ loadAndRender, setStatus });
-    } catch (error) {
-      console.error(error);
-      setStatus("저장 실패");
-    }
+    await executeMutation({
+      action: () => createTaskFromTrigger(input, content, periodType, timeBlock, targetDate),
+      afterPersist: () => { input.value = ""; },
+      loadAndRender,
+      setStatus,
+      successMessage: "저장 완료",
+      failureMessage: "저장 실패",
+    });
   }
 
   async function addBlankTask(trigger, periodType, timeBlock = null, targetDate = targetFor(periodType)) {
@@ -86,16 +85,17 @@ export function createTaskCommandService({
       setStatus("SQLite가 준비되지 않아 저장할 수 없습니다.");
       return;
     }
-    try {
-      const id = await createTaskFromTrigger(trigger, "", periodType, timeBlock, targetDate);
-      state.selectedTaskId = null;
-      state.pendingEditTaskId = id;
-      setStatus("빈 블록 생성 완료");
-      await refreshAfterTaskSave({ loadAndRender, setStatus });
-    } catch (error) {
-      console.error(error);
-      setStatus("빈 블록 생성 실패");
-    }
+    await executeMutation({
+      action: () => createTaskFromTrigger(trigger, "", periodType, timeBlock, targetDate),
+      afterPersist: (id) => {
+        state.selectedTaskId = null;
+        state.pendingEditTaskId = id;
+      },
+      loadAndRender,
+      setStatus,
+      successMessage: "빈 블록 생성 완료",
+      failureMessage: "빈 블록 생성 실패",
+    });
   }
 
   async function copySelectedTaskBlock() {
@@ -113,14 +113,13 @@ export function createTaskCommandService({
     if (!target) return setStatus("대체할 블록을 선택하세요.");
     if (!state.copiedTaskBlock) return setStatus("복사된 블록이 없습니다.");
     if (!state.dbReady) return setStatus("SQLite가 준비되지 않아 저장할 수 없습니다.");
-    try {
-      await updateTaskBlock(target.id, state.copiedTaskBlock.content, state.copiedTaskBlock.status);
-      setStatus("블록 대체 완료");
-      await refreshAfterTaskSave({ loadAndRender, setStatus });
-    } catch (error) {
-      console.error(error);
-      setStatus("블록 대체 실패");
-    }
+    await executeMutation({
+      action: () => updateTaskBlock(target.id, state.copiedTaskBlock.content, state.copiedTaskBlock.status),
+      loadAndRender,
+      setStatus,
+      successMessage: "블록 대체 완료",
+      failureMessage: "블록 대체 실패",
+    });
   }
 
   async function handleTaskBlockShortcuts(event) {

@@ -15,3 +15,25 @@ export async function refreshAfterSave({
 }
 
 export const refreshAfterTaskSave = refreshAfterSave;
+
+export async function executeMutation({
+  action,
+  loadAndRender,
+  setStatus,
+  successMessage,
+  failureMessage,
+  refreshFailureMessage,
+  afterPersist,
+}) {
+  try {
+    const result = await action();
+    await afterPersist?.(result);
+    setStatus(successMessage);
+    await refreshAfterSave({ loadAndRender, setStatus, refreshFailureMessage });
+    return { ok: true, result };
+  } catch (error) {
+    console.error(error);
+    setStatus(failureMessage);
+    return { ok: false, error };
+  }
+}

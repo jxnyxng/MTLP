@@ -1,4 +1,13 @@
 import Database from "@tauri-apps/plugin-sql";
+import {
+  assertPeriodType,
+  assertTargetDate,
+  assertTaskContent,
+  assertTaskId,
+  assertTaskStatus,
+  validateTaskRow,
+  validateTaskWrite,
+} from "./domain/task.js";
 
 const DB_PATH = "sqlite:bujo.db";
 
@@ -73,39 +82,51 @@ async function initializeDb() {
 }
 
 export async function getTasks(periodType, targetDate) {
+  assertPeriodType(periodType);
+  assertTargetDate(periodType, targetDate);
   const database = await initDb();
-  return database.select(
+  const rows = await database.select(
     `SELECT *
        FROM tasks
       WHERE period_type = ? AND target_date = ?
       ORDER BY position ASC, id ASC`,
     [periodType, targetDate],
   );
+  return rows.map(validateTaskRow);
 }
 
 export async function getTasksByTargetPrefix(periodType, targetPrefix) {
+  assertPeriodType(periodType);
+  if (typeof targetPrefix !== "string" || !targetPrefix) {
+    throw new TypeError("targetPrefix must be a non-empty string");
+  }
   const database = await initDb();
-  return database.select(
+  const rows = await database.select(
     `SELECT *
        FROM tasks
       WHERE period_type = ? AND target_date LIKE ?
       ORDER BY target_date ASC, position ASC, id ASC`,
     [periodType, `${targetPrefix}%`],
   );
+  return rows.map(validateTaskRow);
 }
 
 export async function getTasksByTargets(periodType, targetDates) {
+  assertPeriodType(periodType);
+  if (!Array.isArray(targetDates)) throw new TypeError("targetDates must be an array");
   const uniqueTargets = [...new Set(targetDates)];
   if (!uniqueTargets.length) return [];
+  uniqueTargets.forEach((target) => assertTargetDate(periodType, target));
   const database = await initDb();
   const placeholders = uniqueTargets.map(() => "?").join(", ");
-  return database.select(
+  const rows = await database.select(
     `SELECT *
        FROM tasks
       WHERE period_type = ? AND target_date IN (${placeholders})
       ORDER BY target_date ASC, position ASC, id ASC`,
     [periodType, ...uniqueTargets],
   );
+  return rows.map(validateTaskRow);
 }
 
 export async function addTask(
@@ -116,17 +137,20 @@ export async function addTask(
   timeBlock = null,
   splitLane = null,
 ) {
+  const task = validateTaskWrite({ content, periodType, targetDate, position, timeBlock, splitLane });
   const database = await initDb();
   const result = await database.execute(
     `INSERT INTO tasks (content, period_type, target_date, position, time_block, split_lane)
      VALUES (?, ?, ?, ?, ?, ?)`,
-    [content, periodType, targetDate, position, timeBlock, splitLane],
+    [task.content, task.periodType, task.targetDate, task.position, task.timeBlock, task.splitLane],
   );
 
   return result.lastInsertId;
 }
 
 export async function updateTaskStatus(id, status) {
+  id = assertTaskId(id);
+  status = assertTaskStatus(status);
   const database = await initDb();
   return database.execute("UPDATE tasks SET status = ? WHERE id = ?", [
     status,
@@ -135,6 +159,8 @@ export async function updateTaskStatus(id, status) {
 }
 
 export async function updateTaskContent(id, content) {
+  id = assertTaskId(id);
+  content = assertTaskContent(content);
   const database = await initDb();
   return database.execute("UPDATE tasks SET content = ? WHERE id = ?", [
     content,
@@ -143,6 +169,9 @@ export async function updateTaskContent(id, content) {
 }
 
 export async function updateTaskBlock(id, content, status) {
+  id = assertTaskId(id);
+  content = assertTaskContent(content);
+  status = assertTaskStatus(status);
   const database = await initDb();
   return database.execute("UPDATE tasks SET content = ?, status = ? WHERE id = ?", [
     content,
@@ -152,6 +181,7 @@ export async function updateTaskBlock(id, content, status) {
 }
 
 export async function deleteTask(id) {
+  id = assertTaskId(id);
   const database = await initDb();
   return database.execute("DELETE FROM tasks WHERE id = ?", [id]);
 }
@@ -164,19 +194,31 @@ export async function moveTask(
   timeBlock = null,
   splitLane = null,
 ) {
+  const task = validateTaskWrite({ id, periodType, targetDate, position, timeBlock, splitLane });
   const database = await initDb();
   return database.execute(
     `UPDATE tasks
         SET period_type = ?, target_date = ?, position = ?, time_block = ?, split_lane = ?
       WHERE id = ?`,
-    [periodType, targetDate, position, timeBlock, splitLane, id],
+    [task.periodType, task.targetDate, task.position, task.timeBlock, task.splitLane, task.id],
   );
 }
 
 export async function saveTaskOrder(target, updates) {
+  if (!Array.isArray(updates)) throw new TypeError("updates must be an array");
   if (!updates.length) return;
+  const destination = validateTaskWrite({
+    periodType: target?.periodType,
+    targetDate: target?.targetDate,
+    timeBlock: target?.timeBlock ?? null,
+    splitLane: target?.splitLane ?? null,
+  });
+  const normalizedUpdates = updates.map((update) => ({
+    id: assertTaskId(update?.id),
+    position: validateTaskWrite({ position: update?.position }).position,
+  }));
   const database = await initDb();
-  const order = JSON.stringify(updates);
+  const order = JSON.stringify(normalizedUpdates);
   // One UPDATE keeps a failed reorder from leaving only part of the list saved.
   return database.execute(
     `UPDATE tasks
@@ -187,8 +229,8 @@ export async function saveTaskOrder(target, updates) {
                WHERE json_extract(value, '$.id') = tasks.id
             )
       WHERE id IN (SELECT json_extract(value, '$.id') FROM json_each(?))`,
-    [target.periodType, target.targetDate, target.timeBlock ?? null,
-      target.splitLane ?? null, order, order],
+    [destination.periodType, destination.targetDate, destination.timeBlock,
+      destination.splitLane, order, order],
   );
 }
 

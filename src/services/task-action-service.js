@@ -1,4 +1,4 @@
-import { refreshAfterTaskSave } from "./task-mutation-service.js";
+import { executeMutation } from "./task-mutation-service.js";
 
 export function createTaskActionService({
   state,
@@ -9,16 +9,10 @@ export function createTaskActionService({
   loadAndRender,
 }) {
   async function persist(action, successMessage, failureMessage) {
-    try {
-      await action();
-      setStatus(successMessage);
-      await refreshAfterTaskSave({ loadAndRender, setStatus });
-      return true;
-    } catch (error) {
-      console.error(error);
-      setStatus(failureMessage);
-      return false;
-    }
+    const result = await executeMutation({
+      action, loadAndRender, setStatus, successMessage, failureMessage,
+    });
+    return result.ok;
   }
 
   async function removeTask(task) {
