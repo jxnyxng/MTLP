@@ -29,52 +29,60 @@ export function createTaskDataService({
     });
   }
 
-  async function loadTaskData(anchorDate) {
+  async function loadTaskData(anchorDate, requestedPeriodTypes = null) {
+    const requested = requestedPeriodTypes
+      ? new Set(requestedPeriodTypes)
+      : new Set(["FUTURE", "YEARLY", "MONTHLY", "WEEKLY", "DAILY", "JOURNAL"]);
     const weekTargets = weekDates(anchorDate).map(toDateKey);
     const yearTargets = futureYears(anchorDate).map(String);
     const dailyTargetDate = targetFor("DAILY", anchorDate);
     const weeklyTargetDate = targetFor("WEEKLY", anchorDate);
     const legacyWeeklyTargetDate = legacyMondayTargetForWeek(anchorDate);
-    const [
-      futureYearTasks,
-      future,
-      yearly,
-      monthly,
-      weeklyTasks,
-      daily,
-      yearlyMonthTasks,
-      monthDailyTasks,
-      weekDailyTasks,
-      journalEntries,
-      timelineRange,
-    ] = await Promise.all([
-      getTasksByTargets("YEARLY", yearTargets),
-      getTasks("FUTURE", targetFor("FUTURE", anchorDate)),
-      getTasks("YEARLY", targetFor("YEARLY", anchorDate)),
-      getTasks("MONTHLY", targetFor("MONTHLY", anchorDate)),
-      getTasksByTargets("WEEKLY", [weeklyTargetDate, legacyWeeklyTargetDate]),
-      getTasks("DAILY", dailyTargetDate),
-      getTasksByTargetPrefix("MONTHLY", `${targetFor("YEARLY", anchorDate)}-`),
-      getTasksByTargetPrefix("DAILY", `${targetFor("MONTHLY", anchorDate)}-`),
-      getTasksByTargets("DAILY", weekTargets),
-      getAllJournalEntries(),
-      getTimelineRange(dailyTargetDate),
-    ]);
+    const queries = {
+      futureYearTasks: requested.has("FUTURE")
+        ? getTasksByTargets("YEARLY", yearTargets) : Promise.resolve([]),
+      future: requested.has("FUTURE")
+        ? getTasks("FUTURE", targetFor("FUTURE", anchorDate)) : Promise.resolve([]),
+      yearly: requested.has("YEARLY")
+        ? getTasks("YEARLY", targetFor("YEARLY", anchorDate)) : Promise.resolve([]),
+      monthly: requested.has("MONTHLY")
+        ? getTasks("MONTHLY", targetFor("MONTHLY", anchorDate)) : Promise.resolve([]),
+      weeklyTasks: requested.has("WEEKLY")
+        ? getTasksByTargets("WEEKLY", [weeklyTargetDate, legacyWeeklyTargetDate])
+        : Promise.resolve([]),
+      daily: requested.has("DAILY")
+        ? getTasks("DAILY", dailyTargetDate) : Promise.resolve([]),
+      yearlyMonthTasks: requested.has("YEARLY")
+        ? getTasksByTargetPrefix("MONTHLY", `${targetFor("YEARLY", anchorDate)}-`)
+        : Promise.resolve([]),
+      monthDailyTasks: requested.has("MONTHLY")
+        ? getTasksByTargetPrefix("DAILY", `${targetFor("MONTHLY", anchorDate)}-`)
+        : Promise.resolve([]),
+      weekDailyTasks: requested.has("WEEKLY")
+        ? getTasksByTargets("DAILY", weekTargets) : Promise.resolve([]),
+      // Every planner overview includes its matching journal entries.
+      journalEntries: getAllJournalEntries(),
+      timelineRange: requested.has("DAILY")
+        ? getTimelineRange(dailyTargetDate) : Promise.resolve(null),
+    };
+    const keys = Object.keys(queries);
+    const values = await Promise.all(Object.values(queries));
+    const data = Object.fromEntries(keys.map((key, index) => [key, values[index]]));
 
     return {
       tasks: {
-        FUTURE: future,
-        YEARLY: yearly,
-        MONTHLY: monthly,
-        WEEKLY: uniqueTasks(weeklyTasks),
-        DAILY: daily,
+        FUTURE: data.future,
+        YEARLY: data.yearly,
+        MONTHLY: data.monthly,
+        WEEKLY: uniqueTasks(data.weeklyTasks),
+        DAILY: data.daily,
       },
-      futureYearTasks,
-      yearlyMonthTasks,
-      monthDailyTasks,
-      weekDailyTasks,
-      journalEntries,
-      timelineRange: normalizeTimelineRange(timelineRange),
+      futureYearTasks: data.futureYearTasks,
+      yearlyMonthTasks: data.yearlyMonthTasks,
+      monthDailyTasks: data.monthDailyTasks,
+      weekDailyTasks: data.weekDailyTasks,
+      journalEntries: data.journalEntries,
+      timelineRange: requested.has("DAILY") ? normalizeTimelineRange(data.timelineRange) : null,
     };
   }
 
@@ -83,7 +91,10 @@ export function createTaskDataService({
 
     const currentLoad = ++loadVersion;
     const anchorDate = new Date(state.anchorDate);
-    const data = await loadTaskData(anchorDate);
+    const visiblePeriods = state.activeTab
+      ? [state.activeTab, state.sideTab, state.detailModal?.periodType].filter(Boolean)
+      : null;
+    const data = await loadTaskData(anchorDate, visiblePeriods);
     if (currentLoad !== loadVersion || anchorDate.getTime() !== state.anchorDate.getTime()) {
       return;
     }
@@ -98,7 +109,9 @@ export function createTaskDataService({
     state.monthDailyTasks = data.monthDailyTasks;
     state.weekDailyTasks = data.weekDailyTasks;
     state.journalEntries = data.journalEntries;
-    state.timelineRanges[targetFor("DAILY", anchorDate)] = data.timelineRange;
+    if (data.timelineRange) {
+      state.timelineRanges[targetFor("DAILY", anchorDate)] = data.timelineRange;
+    }
   }
 
   return {

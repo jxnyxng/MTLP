@@ -109,3 +109,41 @@ test("loading without SQLite leaves the state intact", async () => {
   await service.loadTasks();
   assert.deepEqual(state.tasks, {});
 });
+
+test("the main load only queries data required by visible planner periods", async () => {
+  const calls = [];
+  const { state, service } = fixture({
+    getTasks: async (type, date) => {
+      calls.push(`task:${type}`);
+      return [{ id: `${type}:${date}`, target_date: date }];
+    },
+    getTasksByTargetPrefix: async (type) => {
+      calls.push(`prefix:${type}`);
+      return [];
+    },
+    getTasksByTargets: async (type) => {
+      calls.push(`targets:${type}`);
+      return [];
+    },
+    getTimelineRange: async () => {
+      calls.push("timeline");
+      return { start: 5, end: 24 };
+    },
+    getAllJournalEntries: async () => {
+      calls.push("journals");
+      return [];
+    },
+  });
+  state.activeTab = "DAILY";
+  state.sideTab = "WEEKLY";
+
+  await service.loadTasks();
+
+  assert.deepEqual(calls.sort(), [
+    "journals",
+    "targets:DAILY",
+    "targets:WEEKLY",
+    "task:DAILY",
+    "timeline",
+  ]);
+});

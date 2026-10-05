@@ -36,7 +36,7 @@ export function createDetailModalController({
 
     const detail = state.detailModal;
     const { periodType, anchorDate } = detail;
-    const data = await loadTaskData(anchorDate);
+    const data = await loadTaskData(anchorDate, [periodType]);
     if (state.detailModal !== detail || !isCurrent()) return;
     document.querySelector(".detail-modal").className =
       `detail-modal detail-modal-${periodType.toLowerCase()}`;
