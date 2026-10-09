@@ -156,6 +156,10 @@ export function createTaskDragController({
     return pointerY < rect.top + rect.height / 2 ? -1 : 1;
   }
 
+  function shouldCloneTask(fromType, toType) {
+    return fromType === "WEEKLY" && toType === "DAILY";
+  }
+
   async function saveDroppedTask(event, { appendOnly = false } = {}) {
     if (!state.dbReady) return;
 
@@ -163,7 +167,7 @@ export function createTaskDragController({
     const target = dropTargetFor(event.to);
 
     try {
-      if (event.pullMode === "clone" || (fromType === "WEEKLY" && target.periodType === "DAILY")) {
+      if (event.pullMode === "clone" || shouldCloneTask(fromType, target.periodType)) {
         await addTask(
           event.item.dataset.content,
           "DAILY",
@@ -217,7 +221,7 @@ export function createTaskDragController({
           pull(to, from) {
             const fromType = from.el.dataset.periodType;
             const toType = to.el.dataset.periodType;
-            return fromType === "WEEKLY" && toType === "DAILY" ? "clone" : true;
+            return shouldCloneTask(fromType, toType) ? "clone" : true;
           },
           put: true,
         },

@@ -197,8 +197,8 @@ export function createShellRenderer({
     }
 
     actions.classList.toggle("journal-view-actions", state.activeTab === "JOURNAL");
-    actions.replaceChildren();
     if (state.activeTab === "JOURNAL") {
+      actions.replaceChildren();
       renderJournalActions?.(actions);
     } else {
       actions.replaceChildren(...actionItems);

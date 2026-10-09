@@ -108,7 +108,10 @@ export function createJournalEditor({ state, addJournalEntry, updateJournalEntry
 
     const dateGroup = document.createElement("section");
     dateGroup.className = "journal-setting-group";
-    dateGroup.innerHTML = `<span>날짜</span><strong>${entry.target_date}</strong>`;
+    dateGroup.append(
+      Object.assign(document.createElement("span"), { textContent: "날짜" }),
+      Object.assign(document.createElement("strong"), { textContent: entry.target_date }),
+    );
 
     const countGroup = document.createElement("section");
     countGroup.className = "journal-setting-group";
